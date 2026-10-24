@@ -18,7 +18,7 @@
   .tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-strong); }
   .check-list { display: flex; flex-wrap: wrap; gap: 8px; }
   .check-list label { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid var(--chip-border); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
-  .check-list input { width: 16px; height: 16px; accent-color: #5B5BD6; }
+  .check-list input { width: 16px; height: 16px; accent-color: #0071E3; }
 </style>
 </head>
 <body>
@@ -55,8 +55,8 @@
 
     <section class="card side" style="padding:0;gap:0" aria-label="Tutor" id="tutor">
       <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
-        <span style="font-size:15px;font-weight:800">Tutor</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0071E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+        <span style="font-size:15px;font-weight:700">Tutor</span>
         <span class="pill pill-blue mono" style="margin-left:auto" id="mode-pill">TEACHING MODE</span>
       </div>
       <div class="chat" id="chat" aria-live="polite"></div>
@@ -286,7 +286,7 @@ RW.initPage('guided-task.html');
       '<p class="muted" style="font-size:14px">Pass them and these concepts turn verified in your tree. The tutor is paused during the checks.</p></div>' +
       open.map(function (n) {
         var c = D.checks[n.id] || { q: 'Write a few lines that use <b>' + esc(n.name) + '</b>. (Demo: any honest attempt passes.)' };
-        return '<div class="card"><div class="split"><h3 style="font-size:16px;font-weight:800">' + esc(n.name) + '</h3><span class="mono small muted">~10 min</span></div>' +
+        return '<div class="card"><div class="split"><h3 style="font-size:16px;font-weight:700">' + esc(n.name) + '</h3><span class="mono small muted">~10 min</span></div>' +
           '<p style="font-size:14px;color:var(--text2)">' + c.q + '</p><label class="sr-only" for="chk-' + n.id + '">Your answer for ' + esc(n.name) + '</label>' +
           '<textarea id="chk-' + n.id + '" class="code-area" style="min-height:160px;border:1px solid var(--border);border-radius:12px" spellcheck="false"></textarea>' +
           '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-primary" type="button" data-run="' + n.id + '">Check</button><span class="small" data-out="' + n.id + '" role="status"></span></div></div>';
@@ -322,7 +322,7 @@ RW.initPage('guided-task.html');
         var allDone = ns.every(function (n) { return n.status === 'verified'; });
         return '<div class="card card-tight" style="' + (hit ? 'border-color:var(--accent)' : '') + '">' +
           '<div class="split" style="align-items:center"><span class="eyebrow" style="color:' + RW.LANE[L.lane].c + '">' + RW.LANE[L.lane].name + ' · ' + L.ticket + '</span><span class="small muted">' + L.steps.length + ' steps</span></div>' +
-          '<h3 style="font-size:17px;font-weight:800">' + esc(L.title) + '</h3><p class="small muted" style="font-size:14px">' + esc(L.brief) + '</p>' +
+          '<h3 style="font-size:17px;font-weight:700">' + esc(L.title) + '</h3><p class="small muted" style="font-size:14px">' + esc(L.brief) + '</p>' +
           '<div style="display:flex;flex-wrap:wrap;gap:6px">' + ns.map(function (n) { return '<span class="tag ' + (n.status === 'verified' ? '' : 'tag-accent') + '">' + (n.status === 'verified' ? '✓ ' : '') + esc(n.name) + '</span>'; }).join('') + '</div>' +
           (running[L.id] ? '<button class="btn" type="button" data-open="' + running[L.id] + '">Open task</button>'
             : '<button class="btn btn-primary" type="button" data-start="' + L.id + '">Start task</button>') +

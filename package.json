@@ -1,0 +1,12 @@
+{
+  "name": "verifai-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "verifAI: learn programming concepts first, then let AI build with what you've proven.",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -20,7 +20,7 @@
 
   <section class="card" id="level" aria-label="Your developer level">
     <div class="row" style="align-items:center;gap:24px">
-      <span class="ring" id="lv-ring" style="width:96px;height:96px"><span style="width:80px;height:80px;flex-direction:column;gap:0"><span class="small muted" style="font-family:Manrope,system-ui,sans-serif;font-weight:700">Level</span><span id="lv-num" style="font-size:28px;font-weight:600;color:var(--accent-strong);line-height:1"></span></span></span>
+      <span class="ring" id="lv-ring" style="width:96px;height:96px"><span style="width:80px;height:80px;flex-direction:column;gap:0"><span class="small muted" style="font-weight:700">Level</span><span id="lv-num" style="font-size:28px;font-weight:600;color:var(--accent-strong);line-height:1"></span></span></span>
       <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:8px">
         <span class="eyebrow accent">Your developer level</span>
         <span class="title-l" id="lv-name"></span>
@@ -108,7 +108,7 @@
 
   <section class="dark-band" aria-label="About">
     <div style="flex:1 1 420px;display:flex;flex-direction:column;gap:6px">
-      <span style="font-size:17px;font-weight:800">Learn it, prove it, then let AI build with it</span>
+      <span style="font-size:17px;font-weight:700">Learn it, prove it, then let AI build with it</span>
       <span class="muted small">The assistant only writes code with concepts you've verified. Everything else it teaches you first.</span>
     </div>
     <a class="btn btn-dark" href="tree.html">See your tree</a>
@@ -127,7 +127,7 @@ RW.initPage('home.html', { role: 'dev' });
 
   // developer level
   var lv = RW.level();
-  document.getElementById('lv-ring').style.background = 'conic-gradient(#5B5BD6 ' + lv.pct + '%, var(--track) 0)';
+  document.getElementById('lv-ring').style.background = 'conic-gradient(#0071E3 ' + lv.pct + '%, var(--track) 0)';
   document.getElementById('lv-num').textContent = lv.num;
   document.getElementById('lv-name').textContent = lv.name;
   document.getElementById('lv-career').innerHTML = '<span class="tag tag-accent">' + esc(lv.position) + '</span>' +
@@ -151,7 +151,7 @@ RW.initPage('home.html', { role: 'dev' });
     var how = i === 0 ? 'Where everyone starts' : i < 6 ? RW.LEVELS[i][0] + ' XP' : 'Senior in TypeScript and in Python or Go';
     return '<tr' + (here ? ' style="background:var(--accent-soft)" aria-current="true"' : '') + '>' +
       '<td><span style="display:flex;align-items:center;gap:8px;font-weight:700;white-space:nowrap">' +
-        '<span class="mono small" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;' + (done || here ? 'background:#5B5BD6;color:#fff' : 'background:var(--soft);color:var(--muted)') + '">' + (done ? CHECK : num) + '</span>' + esc(c.name) +
+        '<span class="mono small" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;' + (done || here ? 'background:#0071E3;color:#fff' : 'background:var(--soft);color:var(--muted)') + '">' + (done ? CHECK : num) + '</span>' + esc(c.name) +
         (here ? ' <span class="pill pill-blue">You</span>' : '') + '</span></td>' +
       '<td>' + esc(c.position) + '</td>' +
       '<td class="muted">' + how + '</td>' +
@@ -178,7 +178,7 @@ RW.initPage('home.html', { role: 'dev' });
     var teach = at.teaches.map(RW.node);
     var finished = teach.every(function (n) { return n.status === 'verified'; });
     var step = at.step, total = at.steps.length;
-    document.getElementById('task-ring').style.background = 'conic-gradient(#5B5BD6 ' + (finished ? 100 : Math.round(((step - 1) / total) * 100)) + '%, var(--track) 0)';
+    document.getElementById('task-ring').style.background = 'conic-gradient(#0071E3 ' + (finished ? 100 : Math.round(((step - 1) / total) * 100)) + '%, var(--track) 0)';
     document.getElementById('task-step').textContent = finished ? 'done' : step + '/' + total;
     document.getElementById('task-title').textContent = at.title;
     var others = RW.tasks().length - 1;
@@ -204,7 +204,7 @@ RW.initPage('home.html', { role: 'dev' });
     var st = RW.laneStats(l.id), pct = Math.round(st.ver / st.total * 100);
     return '<a href="tree.html' + (st.next ? '?node=' + st.next.id : '') + '" class="card card-tight" style="text-decoration:none;color:var(--text);flex-direction:row;align-items:center;gap:16px">' +
       '<span class="ring" style="width:64px;height:64px;background:conic-gradient(' + l.c + ' ' + pct + '%, var(--track) 0)"><span style="width:52px;height:52px;font-size:15px;color:' + l.c + '">' + l.tag + '</span></span>' +
-      '<span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:17px;font-weight:800">' + l.name + '</span>' +
+      '<span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:17px;font-weight:700">' + l.name + '</span>' +
       '<span class="muted small" style="font-size:14px">' + st.ver + ' of ' + st.total + ' verified · ' + st.learning + ' in progress</span>' +
       (st.next ? '<span class="small" style="font-weight:700;color:' + l.c + '">Next: ' + esc(st.next.name) + '</span>' : '') + '</span></a>';
   }).join('');
@@ -230,7 +230,7 @@ RW.initPage('home.html', { role: 'dev' });
 
   // activity
   var acts = s.activity.concat(D.activity).slice(0, 5);
-  var col = { manager: '#5B5BD6', task: '#D97706', verified: '#0E8F86' };
+  var col = { manager: '#0071E3', task: '#D97706', verified: '#0E8F86' };
   document.getElementById('activity').innerHTML = acts.map(function (a) {
     return '<div style="display:flex;gap:12px;align-items:flex-start;font-size:14px"><span class="dot" style="width:8px;height:8px;margin-top:7px;background:' + (col[a.kind] || '#888') + '"></span><span style="flex:1;color:var(--text2)">' + esc(a.text) + '</span><span class="mono small muted">' + a.when + '</span></div>';
   }).join('');

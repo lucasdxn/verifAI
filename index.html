@@ -13,17 +13,17 @@
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mgr: #F29AC8; } }
   :root[data-theme="dark"] { --mgr: #F29AC8; }
   .start { max-width: 980px; margin: 0 auto; padding-block: 56px 40px; display: flex; flex-direction: column; gap: 36px; }
-  .brand { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--text); }
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
   .brand .ai { color: var(--ai); }
   .roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-  .role { position: relative; text-align: left; display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 20px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font: inherit; transition: border-color .15s, box-shadow .15s, transform .15s; }
-  .role:hover { border-color: var(--accent); box-shadow: 0 12px 32px rgba(40, 40, 120, 0.12); transform: translateY(-2px); }
-  .role:focus-visible { outline: 3px solid rgba(91,91,214,0.45); outline-offset: 3px; }
+  .role { position: relative; text-align: left; display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 22px; border: 0; background: var(--card); color: var(--text); cursor: pointer; font: inherit; box-shadow: var(--shadow); transition: box-shadow .2s, transform .2s; }
+  .role:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 18px 40px rgba(0,0,0,0.08); transform: translateY(-2px); }
+  .role:focus-visible { outline: 3px solid rgba(0,113,227,0.45); outline-offset: 3px; }
   .role .points { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; line-height: 1.5; color: var(--text2); }
   .role .points > span { display: list-item; list-style: disc; }
-  .role .go { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--accent-strong); margin-top: auto; }
+  .role .go { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--accent-strong); margin-top: auto; }
   .role .who-row { display: flex; align-items: center; gap: 14px; }
-  .role .big-avatar { width: 52px; height: 52px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 18px; }
+  .role .big-avatar { width: 52px; height: 52px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; }
   .role .current { position: absolute; top: 20px; right: 20px; }
   @media (prefers-reduced-motion: reduce) { .role { transition: none; } .role:hover { transform: none; } }
 </style>
@@ -33,11 +33,11 @@
   <div class="start">
     <div class="stack" style="gap:18px">
       <span class="brand">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M8.5 6c5 0 4 6 7 6"/><path d="M8.5 18c5 0 4-6 7-6"/></svg>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0071E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M8.5 6c5 0 4 6 7 6"/><path d="M8.5 18c5 0 4-6 7-6"/></svg>
         <span>verif<span class="ai">AI</span></span>
       </span>
       <div class="stack" style="gap:8px">
-        <h1 class="title-xl" style="text-wrap:balance">Learn it, prove it, then let AI build with it</h1>
+        <h1 class="title-xl" style="text-wrap:balance;font-size:clamp(34px,5vw,48px);letter-spacing:-0.03em">Learn it, prove it, then let AI build with it</h1>
         <p class="muted" style="font-size:17px;max-width:640px">Choose how you want to use verifAI today. You can switch roles any time from the header.</p>
       </div>
     </div>
@@ -45,8 +45,8 @@
     <div class="roles" role="group" aria-label="Choose your role">
       <button class="role" type="button" data-role="dev">
         <span class="who-row">
-          <span class="big-avatar" style="background:#5B5BD6">AL</span>
-          <span class="stack" style="gap:2px"><span class="eyebrow accent">Developer</span><span style="font-size:20px;font-weight:800">Alex Lindner</span><span class="small muted">Backend · Platform team</span></span>
+          <span class="big-avatar" style="background:#0071E3">AL</span>
+          <span class="stack" style="gap:2px"><span class="eyebrow accent">Developer</span><span style="font-size:20px;font-weight:700">Alex Lindner</span><span class="small muted">Backend · Platform team</span></span>
         </span>
         <span class="points">
           <span>Learn concepts in your learning tree</span>
@@ -59,8 +59,8 @@
 
       <button class="role" type="button" data-role="manager">
         <span class="who-row">
-          <span class="big-avatar" style="background:#C0347A">MK</span>
-          <span class="stack" style="gap:2px"><span class="eyebrow" style="color:var(--mgr)">Manager</span><span style="font-size:20px;font-weight:800">Maria Keller</span><span class="small muted">Team lead · Platform team</span></span>
+          <span class="big-avatar" style="background:#D63A6A">MK</span>
+          <span class="stack" style="gap:2px"><span class="eyebrow" style="color:var(--mgr)">Manager</span><span style="font-size:20px;font-weight:700">Maria Keller</span><span class="small muted">Team lead · Platform team</span></span>
         </span>
         <span class="points">
           <span>See your team's progress and developer levels</span>

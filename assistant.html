@@ -10,12 +10,12 @@
   .model-menu { position: relative; }
   .model-menu summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid var(--chip-border); border-radius: 10px; background: var(--card); cursor: pointer; font-size: 14px; max-width: 320px; }
   .model-menu summary::-webkit-details-marker { display: none; }
-  .model-menu summary b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .model-menu summary b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono), monospace; font-size: 13px; }
   .model-menu[open] summary { border-color: var(--accent); }
   .model-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(380px, calc(100vw - 32px)); max-height: 460px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 14px 40px rgba(20, 20, 50, 0.18); }
   .model-opt { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 8px; border-radius: 8px; cursor: pointer; font-size: 13px; }
   .model-opt:hover { background: var(--soft); }
-  .model-opt input { width: 16px; height: 16px; accent-color: #5B5BD6; flex: 0 0 auto; }
+  .model-opt input { width: 16px; height: 16px; accent-color: #0071E3; flex: 0 0 auto; }
   .model-opt .mono { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 </style>
 <script src="assets/data.js"></script>
@@ -46,8 +46,8 @@
     <div class="grow stack" style="flex:999 1 560px;gap:20px">
     <section class="card" style="padding:0;gap:0" aria-label="Chat">
       <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
-        <span style="font-size:15px;font-weight:800">Chat</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0071E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+        <span style="font-size:15px;font-weight:700">Chat</span>
         <span class="pill pill-blue mono" id="mode-pill">GATED</span>
         <details class="model-menu" id="model-menu" style="margin-left:auto">
           <summary aria-label="Choose the model to chat with"><span class="small muted">Model</span><b id="model-current">Loading…</b><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
@@ -193,7 +193,7 @@ RW.initPage('assistant.html');
     var adds = lines.filter(function (l) { return l[0] === '+'; }).length, dels = lines.filter(function (l) { return l[0] === '-'; }).length;
     var g = RW.gate(p.code, p.lang);
     var blocked = g.needed.map(RW.node);
-    var head = '<div class="split" style="align-items:center"><span style="font-weight:800;font-size:14px">Proposed change to your file</span>' +
+    var head = '<div class="split" style="align-items:center"><span style="font-weight:700;font-size:14px">Proposed change to your file</span>' +
       (p.status === 'pending' ? '<span class="status s-risk">Waiting for your review</span>' : p.status === 'accepted' ? '<span class="status s-done">Accepted by you · ' + esc(p.at) + '</span>' : '<span class="status" style="background:var(--soft);color:var(--muted)">Rejected · ' + esc(p.at) + '</span>') + '</div>';
     var stats = '<span class="small muted">' + adds + ' line' + (adds === 1 ? '' : 's') + ' added · ' + dels + ' removed' + (p.status === 'pending' && p.base !== ws.code ? ' · compared with your file as it is now' : '') + '</span>';
     var body = '<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--card)"><pre style="margin:0;padding:8px 0;font-size:13px;line-height:20px;min-width:max-content">' +
@@ -207,7 +207,7 @@ RW.initPage('assistant.html');
         foot = '<div class="note note-warn"><span><b>You can\'t accept this yet.</b> The new code uses ' + blocked.map(function (n) { return esc(n.name) + ' (' + n.laneName + ')'; }).join(', ') + ', which you haven\'t verified. <a href="tree.html?node=' + blocked[0].id + '">Learn it first</a>.</span></div>' +
           '<div><button class="btn" type="button" data-reject="' + idx + '">Reject change</button></div>';
       } else {
-        foot = '<label style="display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:600;cursor:pointer"><input type="checkbox" data-ack="' + idx + '" style="width:18px;height:18px;margin-top:2px;accent-color:#5B5BD6">I\'ve read every changed line and I understand what it does.</label>' +
+        foot = '<label style="display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:600;cursor:pointer"><input type="checkbox" data-ack="' + idx + '" style="width:18px;height:18px;margin-top:2px;accent-color:#0071E3">I\'ve read every changed line and I understand what it does.</label>' +
           '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-primary" type="button" data-accept="' + idx + '" disabled>Accept change</button><button class="btn" type="button" data-reject="' + idx + '">Reject</button></div>';
       }
     }
@@ -371,7 +371,7 @@ RW.initPage('assistant.html');
     live = !!chosen;
     document.getElementById('model-current').textContent = chosen ? chosen.model : 'None connected';
     document.getElementById('mode-pill').textContent = chosen ? 'GATED' : 'GATED · NOTES ONLY';
-    var h = '<div class="stack" style="gap:4px"><span style="font-weight:800">Choose the model to chat with</span>' +
+    var h = '<div class="stack" style="gap:4px"><span style="font-weight:700">Choose the model to chat with</span>' +
       '<span class="small muted">Whatever you pick, every question is checked against your tree first.</span></div>';
     if (serverErr) {
       h += '<div class="note note-soft"><span>' + esc(serverErr) + '</span></div>';
@@ -381,7 +381,7 @@ RW.initPage('assistant.html');
     h += '<div class="stack" style="gap:12px">' + PROVIDERS.map(function (P) {
       var k = keyInfo && keyInfo.keys.filter(function (x) { return x.provider === P[0]; })[0];
       var list = k ? modelsOf(k) : [];
-      var head = '<div class="split" style="align-items:center"><span class="small" style="font-weight:800">' + P[1] + '</span>' +
+      var head = '<div class="split" style="align-items:center"><span class="small" style="font-weight:700">' + P[1] + '</span>' +
         (k && keyInfo.defaultProvider === P[0] ? '<span class="pill pill-blue">Default provider</span>' : '') + '</div>';
       if (!k || !list.length) {
         var why = serverErr ? 'Not available here.'

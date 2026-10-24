@@ -4,9 +4,9 @@ window.RW_DATA = {
   manager: { name: 'Maria Keller', initials: 'MK' },
 
   lanes: [
-    { id: 'py', name: 'Python', tag: 'Py', sub: 'Backend services and scripts', c: '#5B5BD6', hi: '#B4B5FA', ring: '#CDCEFB', rows: 3 },
-    { id: 'ts', name: 'TypeScript', tag: 'TS', sub: 'Web app and internal tools', c: '#0E8F86', hi: '#8FE0D7', ring: '#BDEBE5', rows: 3 },
-    { id: 'go', name: 'Go', tag: 'Go', sub: 'Platform and infrastructure', c: '#2F7FC1', hi: '#A5CDF0', ring: '#C6DFF4', rows: 2 }
+    { id: 'py', name: 'Python', tag: 'Py', sub: 'Backend services and scripts', c: '#5856D6', hi: '#ABAAF4', ring: '#D0CFF8', rows: 3 },
+    { id: 'ts', name: 'TypeScript', tag: 'TS', sub: 'Web app and internal tools', c: '#007C92', hi: '#7FD3E3', ring: '#C2E9F0', rows: 3 },
+    { id: 'go', name: 'Go', tag: 'Go', sub: 'Platform and infrastructure', c: '#248A3D', hi: '#8EDBA3', ring: '#C7EDD1', rows: 2 }
   ],
 
   stages: ['BASICS', 'CORE', 'DATA WORK', 'INTEGRATION', 'ADVANCED'],
