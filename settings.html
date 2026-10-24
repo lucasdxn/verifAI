@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>verifAI · AI settings</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</head>
+<body>
+<header id="rw-header"></header>
+<main class="wrap stack">
+  <div class="stack" style="gap:6px">
+    <h1 class="title-xl">AI providers</h1>
+    <p class="muted" id="intro"></p>
+  </div>
+
+  <div id="offline" class="note note-warn" hidden></div>
+
+  <div class="row">
+    <div class="grow stack" id="providers"></div>
+    <aside class="side stack" style="gap:16px">
+      <section class="card card-tight" aria-label="Default model">
+        <span class="eyebrow">Used by default</span>
+        <div id="default-box" class="stack" style="gap:8px"><p class="muted small">Add a provider to choose a default.</p></div>
+      </section>
+      <section class="card card-tight" aria-label="How keys are handled">
+        <span class="eyebrow">How your keys are handled</span>
+        <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.65;color:var(--text2)">
+          <li>Stored only on this computer, encrypted with AES-256-GCM.</li>
+          <li>Never sent back to the browser. You only see the last 4 characters.</li>
+          <li>Only ever sent to the provider it belongs to.</li>
+          <li>Every request goes through the AI gate, which limits the model to concepts you've verified.</li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+</main>
+<footer id="rw-footer"></footer>
+
+<script>
+(function () {
+  var esc = RW.esc;
+  var user = RW.role() === 'manager' ? 'maria' : 'alex';
+  RW.initPage('settings.html');
+  var who = user === 'maria' ? RW.D.manager.name : RW.D.user.name;
+  document.getElementById('intro').textContent = 'Add your own API keys and choose which model verifAI uses for you. Signed in as ' + who + '.';
+
+  var PROV = [
+    { id: 'anthropic', name: 'Anthropic (Claude)', hint: 'Starts with sk-ant-', link: 'https://console.anthropic.com/settings/keys' },
+    { id: 'openai', name: 'OpenAI', hint: 'Starts with sk-', link: 'https://platform.openai.com/api-keys' },
+    { id: 'google', name: 'Google (Gemini)', hint: 'From Google AI Studio', link: 'https://aistudio.google.com/app/apikey' },
+    { id: 'mistral', name: 'Mistral', hint: 'From La Plateforme', link: 'https://console.mistral.ai/api-keys' },
+    { id: 'custom', name: 'Custom endpoint', hint: 'Any OpenAI-compatible API, e.g. Ollama or vLLM. Key optional.', custom: true }
+  ];
+  var view = { keys: [], defaultProvider: null };
+  var busy = {};
+
+  function k(id) { return view.keys.filter(function (x) { return x.provider === id; })[0]; }
+  function q(s) { return '?user=' + user + (s ? '&' + s : ''); }
+
+  function card(p) {
+    var key = k(p.id), t = key && key.lastTest;
+    var status = !key ? '<span class="status" style="background:var(--soft);color:var(--muted)">Not connected</span>'
+      : !t ? '<span class="status s-risk">Saved · not tested</span>'
+      : t.ok ? '<span class="status s-done">Connected</span>' : '<span class="status" style="background:var(--bad-bg);color:var(--bad-text)">Test failed</span>';
+    var isDefault = view.defaultProvider === p.id;
+    var h = '<section class="card" aria-label="' + esc(p.name) + '" data-p="' + p.id + '">' +
+      '<div class="split" style="align-items:center"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2 class="title-m">' + esc(p.name) + '</h2>' + status + (isDefault ? '<span class="pill pill-blue">Default</span>' : '') + '</div>' +
+      (p.link ? '<a href="' + p.link + '" target="_blank" rel="noopener" class="small" style="font-weight:700">Get a key ↗</a>' : '') + '</div>';
+
+    if (key) {
+      h += '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--text2)">' +
+        (key.last4 ? '<span>Key <span class="mono">••••' + esc(key.last4) + '</span></span>' : '<span>No key</span>') +
+        (key.baseUrl ? '<span class="mono small">' + esc(key.baseUrl) + '</span>' : '') +
+        '<span class="muted">Added ' + new Date(key.addedAt).toLocaleDateString() + '</span></div>';
+      if (t) h += '<div class="note ' + (t.ok ? 'note-good' : 'note-warn') + '"><span>' + esc(t.msg) + '</span></div>';
+
+      // model picker
+      var models = key.models || [];
+      h += '<div class="stack" style="gap:6px"><label class="small" style="font-weight:700" for="m-' + p.id + '">Model</label>';
+      if (models.length) {
+        h += '<div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="mf-' + p.id + '" placeholder="Filter models…" style="flex:1 1 160px" aria-label="Filter models">' +
+          '<select id="m-' + p.id + '" style="flex:2 1 240px">' + models.map(function (m) { return '<option' + (m === key.model ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('') + '</select></div>';
+      } else {
+        h += '<input type="text" id="m-' + p.id + '" value="' + esc(key.model || '') + '" placeholder="Test the connection to load the model list, or type a model ID">';
+      }
+      h += '<span class="small muted">The list comes straight from ' + esc(p.name) + ', so it only shows models your key can use.</span></div>';
+    }
+
+    h += '<form class="stack" style="gap:10px" data-form="' + p.id + '">';
+    if (p.custom) h += '<label class="field" for="u-' + p.id + '">Base URL<input type="text" id="u-' + p.id + '" placeholder="http://localhost:11434/v1" value="' + esc((key && key.baseUrl) || '') + '"></label>';
+    h += '<label class="field" for="k-' + p.id + '">' + (key ? 'Replace API key' : 'API key') + (p.custom ? ' (optional)' : '') +
+      '<input type="password" id="k-' + p.id + '" autocomplete="off" spellcheck="false" placeholder="' + esc(p.hint) + '"></label>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+      '<button class="btn btn-primary" type="submit"' + (busy[p.id] ? ' disabled' : '') + '>' + (key ? 'Save changes' : 'Save key') + '</button>' +
+      (key ? '<button class="btn" type="button" data-test="' + p.id + '"' + (busy[p.id] ? ' disabled' : '') + '>' + (busy[p.id] === 'test' ? 'Testing…' : 'Test connection') + '</button>' : '') +
+      (key && !isDefault ? '<button class="btn" type="button" data-default="' + p.id + '">Use by default</button>' : '') +
+      (key ? '<button class="link-btn" type="button" data-remove="' + p.id + '" style="margin-left:auto">Remove</button>' : '') +
+      '</div><span class="small" data-msg="' + p.id + '" role="status"></span></form></section>';
+    return h;
+  }
+
+  function render() {
+    var box = document.getElementById('providers');
+    box.innerHTML = PROV.map(card).join('');
+
+    PROV.forEach(function (p) {
+      var form = box.querySelector('[data-form="' + p.id + '"]');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var keyEl = document.getElementById('k-' + p.id), urlEl = document.getElementById('u-' + p.id), mEl = document.getElementById('m-' + p.id);
+        var body = { user: user };
+        if (keyEl.value) body.apiKey = keyEl.value.trim();
+        if (urlEl) body.baseUrl = urlEl.value.trim();
+        if (mEl) body.model = mEl.value.trim();
+        keyEl.value = ''; // never keep the key in the page
+        var hadKey = !!k(p.id);
+        busy[p.id] = 'save';
+        RW.api('/api/keys/' + p.id, { method: 'PUT', body: body }).then(function (r) {
+          view = r; busy[p.id] = false;
+          if (!hadKey || body.apiKey) return test(p.id); // load the model list right away
+          render(); msg(p.id, 'Saved.', true);
+        }).catch(function (err) { busy[p.id] = false; render(); msg(p.id, err.message, false); });
+      });
+      var mEl = document.getElementById('m-' + p.id);
+      if (mEl && mEl.tagName === 'SELECT') {
+        mEl.addEventListener('change', function () { saveModel(p.id, mEl.value); });
+        var all = (k(p.id).models || []);
+        document.getElementById('mf-' + p.id).addEventListener('input', function (e) {
+          var f = e.target.value.toLowerCase(), cur = mEl.value;
+          mEl.innerHTML = all.filter(function (m) { return m.toLowerCase().indexOf(f) !== -1 || m === cur; })
+            .map(function (m) { return '<option' + (m === cur ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('');
+        });
+      } else if (mEl) {
+        mEl.addEventListener('change', function () { saveModel(p.id, mEl.value.trim()); });
+      }
+    });
+    box.querySelectorAll('[data-test]').forEach(function (b) { b.addEventListener('click', function () { test(b.getAttribute('data-test')); }); });
+    box.querySelectorAll('[data-default]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        RW.api('/api/default', { method: 'PUT', body: { user: user, provider: b.getAttribute('data-default') } }).then(function (r) { view = r; render(); });
+      });
+    });
+    box.querySelectorAll('[data-remove]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-remove');
+        RW.api('/api/keys/' + id + q(), { method: 'DELETE' }).then(function (r) { view = r; render(); });
+      });
+    });
+    defaults();
+  }
+
+  function defaults() {
+    var box = document.getElementById('default-box');
+    if (!view.keys.length) { box.innerHTML = '<p class="muted small">Add a provider to choose a default.</p>'; return; }
+    box.innerHTML = '<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px"><legend class="sr-only">Default provider</legend>' +
+      view.keys.map(function (key) {
+        return '<label style="display:flex;align-items:flex-start;gap:10px;font-size:14px;min-height:36px;cursor:pointer"><input type="radio" name="def" value="' + key.provider + '"' + (view.defaultProvider === key.provider ? ' checked' : '') + ' style="width:18px;height:18px;margin-top:2px;accent-color:#5B5BD6">' +
+          '<span style="display:flex;flex-direction:column"><b>' + esc(key.name) + '</b><span class="mono small muted">' + esc(key.model || 'no model picked') + '</span></span></label>';
+      }).join('') + '</fieldset><p class="small muted">You can still switch models per conversation in the tutor.</p>';
+    box.querySelectorAll('input[name="def"]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        RW.api('/api/default', { method: 'PUT', body: { user: user, provider: r.value } }).then(function (res) { view = res; render(); });
+      });
+    });
+  }
+
+  function saveModel(id, model) {
+    RW.api('/api/keys/' + id, { method: 'PUT', body: { user: user, model: model } }).then(function (r) {
+      view = r; defaults(); msg(id, 'Model set to ' + model + '.', true);
+    }).catch(function (err) { msg(id, err.message, false); });
+  }
+  function test(id) {
+    busy[id] = 'test'; render();
+    return RW.api('/api/keys/' + id + '/test', { method: 'POST', body: { user: user } }).then(function (r) {
+      view = r; busy[id] = false; render();
+    }).catch(function (err) { busy[id] = false; render(); msg(id, err.message, false); });
+  }
+  function msg(id, text, ok) {
+    var el = document.querySelector('[data-msg="' + id + '"]');
+    if (el) { el.textContent = text; el.style.color = ok ? 'var(--good-text)' : 'var(--bad-text)'; }
+  }
+
+  RW.api('/api/keys' + q()).then(function (r) { view = r; render(); }).catch(function () {
+    var off = document.getElementById('offline');
+    off.hidden = false;
+    off.innerHTML = '<span><b>Connecting AI providers isn\'t available here.</b> You can still learn, take challenges, do guided tasks and use the assistant\'s concept check.</span>';
+    render();
+    document.querySelectorAll('#providers button, #providers input').forEach(function (el) { el.disabled = true; });
+  });
+})();
+</script>
+</body>
+</html>

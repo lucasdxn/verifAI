@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>verifAI · Assistant</title>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  .model-menu { position: relative; }
+  .model-menu summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid var(--chip-border); border-radius: 10px; background: var(--card); cursor: pointer; font-size: 14px; max-width: 320px; }
+  .model-menu summary::-webkit-details-marker { display: none; }
+  .model-menu summary b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .model-menu[open] summary { border-color: var(--accent); }
+  .model-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(380px, calc(100vw - 32px)); max-height: 460px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 14px 40px rgba(20, 20, 50, 0.18); }
+  .model-opt { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 8px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .model-opt:hover { background: var(--soft); }
+  .model-opt input { width: 16px; height: 16px; accent-color: #5B5BD6; flex: 0 0 auto; }
+  .model-opt .mono { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+</style>
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</head>
+<body>
+<header id="rw-header"></header>
+<main class="wrap stack">
+  <div class="stack" style="gap:6px">
+    <h1 class="title-xl">Assistant</h1>
+    <p class="muted" style="max-width:720px">Ask about anything you've verified in your tree. If a question needs a concept you haven't learned yet, the assistant won't answer it and points you to where you can learn it.</p>
+  </div>
+
+  <div class="row">
+    <aside class="side stack" style="flex:1 1 300px;gap:16px" aria-label="What you can ask about">
+      <section class="card card-tight">
+        <span class="eyebrow">You can ask about</span>
+        <div class="stack" style="gap:14px" id="can-ask"></div>
+        <p class="small muted">Click a concept to start a question.</p>
+      </section>
+      <section class="card card-tight">
+        <span class="eyebrow">Not unlocked yet</span>
+        <p style="font-size:14px;color:var(--text2)" id="locked-count"></p>
+        <a class="btn" href="tree.html">Open your tree</a>
+      </section>
+    </aside>
+
+    <div class="grow stack" style="flex:999 1 560px;gap:20px">
+    <section class="card" style="padding:0;gap:0" aria-label="Chat">
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+        <span style="font-size:15px;font-weight:800">Chat</span>
+        <span class="pill pill-blue mono" id="mode-pill">GATED</span>
+        <details class="model-menu" id="model-menu" style="margin-left:auto">
+          <summary aria-label="Choose the model to chat with"><span class="small muted">Model</span><b id="model-current">Loading…</b><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div class="model-panel" id="model-panel"></div>
+        </details>
+        <button class="link-btn" id="clear" type="button">Clear chat</button>
+      </div>
+      <div class="chat" id="chat" aria-live="polite" style="min-height:360px;max-height:620px"></div>
+      <form id="form" style="padding:16px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
+        <label for="q" style="font-size:13px;font-weight:700">Your question</label>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <textarea id="q" rows="2" placeholder="e.g. How do I loop over a dict in Python?" style="flex:1;min-width:0;resize:vertical;min-height:52px"></textarea>
+          <button class="btn btn-primary" style="width:52px;padding:0" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button>
+        </div>
+        <span class="small muted" id="status"></span>
+      </form>
+    </section>
+
+    <section class="card" aria-label="Your code" id="workspace">
+      <div class="split" style="align-items:center">
+        <div class="stack" style="gap:2px">
+          <h2 class="title-m">Your code</h2>
+          <span class="small muted">The assistant can only suggest changes to this file. Nothing changes until you review and accept it.</span>
+        </div>
+        <label class="small" style="font-weight:700;display:flex;align-items:center;gap:8px" for="ws-lang">Language
+          <select id="ws-lang" style="min-height:40px"></select>
+        </label>
+      </div>
+      <div class="editor">
+        <div class="editor-bar"><span class="file-tab" id="ws-file">main.py</span><span class="small muted" id="ws-log">You can edit this file yourself at any time.</span></div>
+        <label class="sr-only" for="ws-code">Your code</label>
+        <textarea id="ws-code" class="code-area" style="min-height:220px" spellcheck="false" autocomplete="off"></textarea>
+      </div>
+    </section>
+    </div>
+  </div>
+</main>
+<footer id="rw-footer"></footer>
+
+<script>
+RW.initPage('assistant.html');
+(function () {
+  var D = RW.D, esc = RW.esc;
+  var PICK_KEY = 'rootwise-tutor-model';
+  var live = false; // true once we know a provider and model are set up on the local server
+
+  // ---------- sidebar ----------
+  function sidebar() {
+    var all = RW.allNodes();
+    document.getElementById('can-ask').innerHTML = D.lanes.map(function (l) {
+      var v = all.filter(function (n) { return n.lane === l.id && n.status === 'verified'; });
+      return '<div class="stack" style="gap:6px"><span class="small" style="font-weight:700">' + l.name + '</span><div style="display:flex;flex-wrap:wrap;gap:6px">' +
+        (v.length ? v.map(function (n) {
+          return '<button type="button" class="tag tag-accent" data-ask="' + n.id + '" style="border:0;cursor:pointer">' + esc(n.name) + '</button>';
+        }).join('') : '<span class="small muted">Nothing verified yet</span>') + '</div></div>';
+    }).join('');
+    var locked = all.filter(function (n) { return n.status !== 'verified'; }).length;
+    document.getElementById('locked-count').textContent = locked + ' concepts are still to learn. Questions about them go to your tree, a challenge or a guided task.';
+    document.querySelectorAll('[data-ask]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var n = RW.node(b.getAttribute('data-ask'));
+        var q = document.getElementById('q');
+        q.value = 'Can you explain ' + n.name.toLowerCase() + ' in ' + n.laneName + ' with a small example?';
+        q.focus();
+      });
+    });
+  }
+
+  // ---------- messages ----------
+  function format(text) {
+    // light formatting: ```code``` blocks, `inline code`, line breaks
+    var parts = String(text).split(/```[a-z]*\n?/i), h = '';
+    parts.forEach(function (p, i) {
+      if (i % 2) h += '<pre class="snippet">' + esc(p.replace(/\n$/, '')) + '</pre>';
+      else h += esc(p).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
+    });
+    return h;
+  }
+  function nodeChip(id, ok) {
+    var n = RW.node(id);
+    return '<span class="tag ' + (ok ? 'tag-accent' : '') + '" style="' + (ok ? '' : 'background:var(--bad-bg);color:var(--bad-text)') + '">' + (ok ? '✓ ' : '✕ ') + esc(n.name) + ' · ' + n.laneName + '</span>';
+  }
+  function render() {
+    var s = RW.load(), c = document.getElementById('chat');
+    if (!s.chat.length) {
+      c.innerHTML = '<div class="msg-ai"><span>Hi Alex. I can help with the ' + RW.allNodes().filter(function (n) { return n.status === 'verified'; }).length +
+        ' concepts you\'ve verified. Ask me to explain one, review a snippet that uses them, or help you write something with them.</span>' +
+        '<span class="small muted">Anything that needs a concept you haven\'t learned yet, I\'ll send you to your tree instead.</span></div>';
+      return;
+    }
+    c.innerHTML = s.chat.map(function (m, idx) {
+      if (m.role === 'me') {
+        return '<div class="msg-me">' + esc(m.text) + '</div>' +
+          (m.concepts && m.concepts.length ? '<div style="align-self:flex-end;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end">' +
+            m.concepts.map(function (id) { return nodeChip(id, RW.node(id).status === 'verified'); }).join('') + '</div>' : '');
+      }
+      if (m.kind === 'pending') return '<div class="msg-ai"><span class="muted">Checking your question against your tree…</span></div>';
+      if (m.kind === 'blocked') {
+        var acts = m.needed.map(function (id) {
+          var n = RW.node(id);
+          return '<div class="concept-row" style="background:var(--card);border:1px solid var(--border)"><span style="flex:1 1 180px;font-weight:700;font-size:14px">' + esc(n.name) + ' <span class="muted" style="font-weight:600">· ' + n.laneName + ' · ' + (n.status === 'locked' ? 'locked' : n.status === 'learning' ? 'in progress' : 'ready to learn') + '</span></span>' +
+            '<a class="link-btn" href="tree.html?node=' + id + '">Open in tree</a>' +
+            (n.status === 'learning' || n.status === 'ready' ? '<a class="link-btn" href="challenge.html' + (id === 'py-async' ? '' : '?concept=' + id) + '">Take the challenge</a>' : '') +
+            '<a class="link-btn" href="guided-task.html?learn=' + id + '">Learn it in a guided task</a></div>';
+        }).join('');
+        return '<div class="msg-ai" style="padding:14px;border-radius:12px;background:var(--warn-bg);color:var(--warn-text)"><span><b>I can\'t answer that yet.</b> It needs ' +
+          (m.needed.length > 1 ? 'concepts' : 'a concept') + ' you haven\'t verified. Learn ' + (m.needed.length > 1 ? 'them' : 'it') + ' first, then ask again.</span></div><div class="stack" style="gap:8px">' + acts + '</div>';
+      }
+      if (m.kind === 'off') {
+        return '<div class="msg-ai" style="padding:14px;border-radius:12px;background:var(--soft)"><span><b>That\'s outside what I can help with here.</b> I only answer questions about programming concepts you\'ve verified in your tree. Try asking about one of the concepts on the left.</span></div>';
+      }
+      if (m.kind === 'offline') {
+        return '<div class="msg-ai"><span><b>Allowed: everything this question needs is verified.</b> ' + esc(m.note) + '</span>' +
+          '<span class="small" style="font-weight:700">What your tree says:</span>' +
+          m.concepts.map(function (id) { var n = RW.node(id); return '<div class="note note-soft" style="flex-direction:column;gap:2px"><b>' + esc(n.name) + ' · ' + n.laneName + '</b><span>' + esc(n.desc) + '</span></div>'; }).join('') + '</div>';
+      }
+      if (m.kind === 'error') return '<div class="msg-ai"><span style="color:var(--bad-text)">' + esc(m.text) + '</span> <a href="settings.html">AI settings</a></div>';
+      return '<div class="msg-ai"><span>' + format(m.text) + '</span>' + (m.via ? '<span class="small muted">via ' + esc(m.via) + ' · answered with your verified concepts only</span>' : '') + '</div>' +
+        (m.proposal ? proposalCard(m, idx) : '');
+    }).join('');
+    bindProposals();
+    c.scrollTop = c.scrollHeight;
+  }
+
+  // ---------- proposed changes: the developer always reviews and confirms ----------
+  function diff(a, b) {
+    var A = a.replace(/\n$/, '').split('\n'), B = b.replace(/\n$/, '').split('\n'), n = A.length, m = B.length, i, j;
+    var L = []; for (i = 0; i <= n; i++) { L.push(new Array(m + 1).fill(0)); }
+    for (i = n - 1; i >= 0; i--) for (j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    var out = []; i = 0; j = 0;
+    while (i < n && j < m) {
+      if (A[i] === B[j]) { out.push([' ', A[i]]); i++; j++; }
+      else if (L[i + 1][j] >= L[i][j + 1]) { out.push(['-', A[i]]); i++; }
+      else { out.push(['+', B[j]]); j++; }
+    }
+    while (i < n) out.push(['-', A[i++]]);
+    while (j < m) out.push(['+', B[j++]]);
+    return out;
+  }
+  function proposalCard(m, idx) {
+    var p = m.proposal, ws = RW.load().workspace;
+    var lines = diff(p.status === 'pending' ? ws.code : p.base, p.code);
+    var adds = lines.filter(function (l) { return l[0] === '+'; }).length, dels = lines.filter(function (l) { return l[0] === '-'; }).length;
+    var g = RW.gate(p.code, p.lang);
+    var blocked = g.needed.map(RW.node);
+    var head = '<div class="split" style="align-items:center"><span style="font-weight:800;font-size:14px">Proposed change to your file</span>' +
+      (p.status === 'pending' ? '<span class="status s-risk">Waiting for your review</span>' : p.status === 'accepted' ? '<span class="status s-done">Accepted by you · ' + esc(p.at) + '</span>' : '<span class="status" style="background:var(--soft);color:var(--muted)">Rejected · ' + esc(p.at) + '</span>') + '</div>';
+    var stats = '<span class="small muted">' + adds + ' line' + (adds === 1 ? '' : 's') + ' added · ' + dels + ' removed' + (p.status === 'pending' && p.base !== ws.code ? ' · compared with your file as it is now' : '') + '</span>';
+    var body = '<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--card)"><pre style="margin:0;padding:8px 0;font-size:13px;line-height:20px;min-width:max-content">' +
+      lines.map(function (l) {
+        var bg = l[0] === '+' ? 'background:var(--good-bg);color:var(--good-text)' : l[0] === '-' ? 'background:var(--bad-bg);color:var(--bad-text)' : 'color:var(--code-text)';
+        return '<span style="display:block;padding:0 12px;' + bg + '"><span aria-hidden="true" style="display:inline-block;width:16px">' + (l[0] === ' ' ? '' : l[0]) + '</span><span class="sr-only">' + (l[0] === '+' ? 'added: ' : l[0] === '-' ? 'removed: ' : '') + '</span>' + esc(l[1]) + '</span>';
+      }).join('') + '</pre></div>';
+    var foot = '';
+    if (p.status === 'pending') {
+      if (blocked.length) {
+        foot = '<div class="note note-warn"><span><b>You can\'t accept this yet.</b> The new code uses ' + blocked.map(function (n) { return esc(n.name) + ' (' + n.laneName + ')'; }).join(', ') + ', which you haven\'t verified. <a href="tree.html?node=' + blocked[0].id + '">Learn it first</a>.</span></div>' +
+          '<div><button class="btn" type="button" data-reject="' + idx + '">Reject change</button></div>';
+      } else {
+        foot = '<label style="display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:600;cursor:pointer"><input type="checkbox" data-ack="' + idx + '" style="width:18px;height:18px;margin-top:2px;accent-color:#5B5BD6">I\'ve read every changed line and I understand what it does.</label>' +
+          '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-primary" type="button" data-accept="' + idx + '" disabled>Accept change</button><button class="btn" type="button" data-reject="' + idx + '">Reject</button></div>';
+      }
+    }
+    return '<div class="card card-tight" style="gap:10px;border-color:' + (p.status === 'pending' ? 'var(--accent)' : 'var(--border)') + '">' + head + stats + body + foot + '</div>';
+  }
+  function bindProposals() {
+    var c = document.getElementById('chat');
+    c.querySelectorAll('[data-ack]').forEach(function (cb) {
+      cb.addEventListener('change', function () { c.querySelector('[data-accept="' + cb.getAttribute('data-ack') + '"]').disabled = !cb.checked; });
+    });
+    c.querySelectorAll('[data-accept]').forEach(function (b) { b.addEventListener('click', function () { decide(+b.getAttribute('data-accept'), true); }); });
+    c.querySelectorAll('[data-reject]').forEach(function (b) { b.addEventListener('click', function () { decide(+b.getAttribute('data-reject'), false); }); });
+  }
+  function clock() { var d = new Date(); return RW.today() + ' ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function decide(idx, accept) {
+    RW.update(function (s) {
+      var p = s.chat[idx] && s.chat[idx].proposal;
+      if (!p || p.status !== 'pending') return;
+      p.status = accept ? 'accepted' : 'rejected'; p.at = clock();
+      if (accept) { p.base = s.workspace.code; s.workspace.code = p.code; s.workspace.lang = p.lang; }
+      s.activity.unshift({ text: (accept ? 'Reviewed and accepted' : 'Rejected') + ' an assistant change to your code', when: RW.today(), kind: 'task' });
+    });
+    loadWorkspace();
+    document.getElementById('ws-log').textContent = accept ? 'Change accepted at ' + clock().split(' ')[1] + '. You can still edit the file yourself.' : 'Change rejected. Your file is unchanged.';
+    render();
+  }
+  function splitProposal(text) {
+    var mm = /```proposal[^\n]*\n([\s\S]*?)```/i.exec(text || '');
+    if (!mm) return { text: text, code: null };
+    return { text: (text.slice(0, mm.index) + text.slice(mm.index + mm[0].length)).trim() || 'Here\'s a proposed change.', code: mm[1] };
+  }
+
+  // ---------- workspace ----------
+  var STARTER = {
+    py: 'def total(prices):\n    result = 0\n    for p in prices:\n        result = result + p\n    return result\n',
+    ts: 'function total(prices: number[]): number {\n  let result = 0;\n  for (const p of prices) {\n    result = result + p;\n  }\n  return result;\n}\n',
+    go: 'package main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("hello")\n}\n'
+  };
+  var FILE = { py: 'main.py', ts: 'main.ts', go: 'main.go' };
+  function ws() {
+    var s = RW.load();
+    if (!s.workspace) RW.update(function (x) { x.workspace = { lang: 'py', code: STARTER.py }; });
+    return RW.load().workspace;
+  }
+  function loadWorkspace() {
+    var w = ws();
+    document.getElementById('ws-lang').value = w.lang;
+    document.getElementById('ws-file').textContent = FILE[w.lang];
+    document.getElementById('ws-code').value = w.code;
+  }
+  document.getElementById('ws-lang').innerHTML = D.lanes.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+  // One file per language; switching keeps what you wrote in the other.
+  document.getElementById('ws-lang').addEventListener('change', function (e) {
+    var lang = e.target.value;
+    RW.update(function (s) {
+      s.wsFiles = s.wsFiles || {};
+      s.wsFiles[s.workspace.lang] = s.workspace.code;
+      s.workspace = { lang: lang, code: s.wsFiles[lang] != null ? s.wsFiles[lang] : STARTER[lang] };
+    });
+    loadWorkspace(); render();
+  });
+  document.getElementById('ws-code').addEventListener('input', function (e) {
+    var v = e.target.value; RW.update(function (s) { s.workspace.code = v; });
+  });
+  ws(); loadWorkspace();
+  function push(m) { RW.update(function (s) { s.chat.push(m); if (s.chat.length > 60) s.chat = s.chat.slice(-60); }); render(); }
+  function replacePending(m) { RW.update(function (s) { var i = s.chat.length - 1; if (s.chat[i] && s.chat[i].kind === 'pending') s.chat[i] = m; else s.chat.push(m); }); render(); }
+
+  // ---------- sending ----------
+  function pick() {
+    return chosen ? { provider: chosen.provider, model: chosen.model } : {};
+  }
+  function offlineNote() {
+    return 'No AI model is connected, so here\'s what your tree says instead.';
+  }
+  document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = document.getElementById('q'), text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    var g = RW.gate(text, ws().lang);
+    var concepts = g.allowed.concat(g.needed);
+    push({ role: 'me', text: text, concepts: concepts });
+
+    // 1. Local gate: never send a question about unverified concepts to the model.
+    if (g.needed.length) { push({ role: 'ai', kind: 'blocked', needed: g.needed }); return; }
+
+    // 2. With a live model, the server checks again and answers with verified concepts only.
+    if (live) {
+      push({ role: 'ai', kind: 'pending' });
+      var hist = RW.load().chat.filter(function (m) { return m.role === 'me' || m.kind === 'answer'; }).slice(-7, -1)
+        .map(function (m) { return { role: m.role, text: m.text }; });
+      var p = pick();
+      RW.api('/api/chat', { method: 'POST', body: { user: 'alex', message: text, detected: g.allowed, catalog: RW.catalog(), history: hist, provider: p.provider, model: p.model,
+        workspace: { lang: RW.LANE[ws().lang].name, code: ws().code } } })
+        .then(function (r) {
+          if (r.blocked && r.offTopic) return replacePending({ role: 'ai', kind: 'off' });
+          if (r.blocked) return replacePending({ role: 'ai', kind: 'blocked', needed: r.needed });
+          // show the concepts the model found on the question too
+          RW.update(function (s) { for (var i = s.chat.length - 1; i >= 0; i--) if (s.chat[i].role === 'me') { s.chat[i].concepts = r.concepts; break; } });
+          // A code change is never applied directly: it becomes a proposal the developer must review and accept.
+          var sp = splitProposal(r.reply);
+          replacePending({ role: 'ai', kind: 'answer', text: sp.text, via: r.provider + ' · ' + r.model,
+            proposal: sp.code ? { code: sp.code, lang: ws().lang, base: ws().code, status: 'pending' } : null });
+        })
+        .catch(function (err) { replacePending({ role: 'ai', kind: 'error', text: err.message }); });
+      return;
+    }
+
+    // 3. No live model: allowed questions get the learner's own notes from the tree.
+    if (!g.matched) { push({ role: 'ai', kind: 'off' }); return; }
+    push({ role: 'ai', kind: 'offline', concepts: g.allowed, note: offlineNote() });
+  });
+  document.getElementById('q').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('form').requestSubmit(); }
+  });
+  document.getElementById('clear').addEventListener('click', function () { RW.update(function (s) { s.chat = []; }); render(); });
+
+  // Without a connected AI, show once how a proposed change works, clearly marked as an example.
+  function example() {
+    var s = RW.load();
+    if (s.chat.length || s.exampleShown || ws().lang !== 'py') return;
+    RW.update(function (x) {
+      x.exampleShown = true;
+      x.chat.push({ role: 'me', text: 'Example: can you make total() shorter?', concepts: ['py-fn'] });
+      x.chat.push({ role: 'ai', kind: 'answer', text: 'This is an example of how code changes work here, since no AI is connected in this copy. `sum()` adds up a list for you, so the loop isn\'t needed:',
+        proposal: { code: 'def total(prices):\n    return sum(prices)\n', lang: 'py', base: x.workspace.code, status: 'pending' } });
+    });
+    render();
+  }
+
+  // ---------- model chooser ----------
+  // Lists every provider: connected ones with the models your key can use, the others with a way to connect.
+  var PROVIDERS = [['anthropic', 'Anthropic (Claude)'], ['openai', 'OpenAI'], ['google', 'Google (Gemini)'], ['mistral', 'Mistral'], ['custom', 'Custom endpoint']];
+  var chosen = null, keyInfo = null, serverErr = null, filter = '';
+  function modelsOf(k) {
+    var list = (k.models && k.models.length ? k.models.slice() : (k.model ? [k.model] : []));
+    if (k.model && list.indexOf(k.model) === -1) list.unshift(k.model);
+    return list;
+  }
+  function saveChoice() { try { localStorage.setItem(PICK_KEY, chosen ? chosen.provider + '|' + chosen.model : ''); } catch (e) { } }
+  function chooseInitial() {
+    var usable = keyInfo ? keyInfo.keys.filter(function (k) { return modelsOf(k).length; }) : [];
+    if (!usable.length) { chosen = null; return; }
+    var saved = null;
+    try { saved = localStorage.getItem(PICK_KEY); } catch (e) { saved = null; }
+    if (saved) {
+      var i = saved.indexOf('|'), sp = saved.slice(0, i), sm = saved.slice(i + 1);
+      var k = usable.filter(function (x) { return x.provider === sp; })[0];
+      if (k && modelsOf(k).indexOf(sm) !== -1) { chosen = { provider: sp, model: sm, name: k.name }; return; }
+    }
+    var def = usable.filter(function (k) { return k.provider === keyInfo.defaultProvider; })[0] || usable[0];
+    chosen = { provider: def.provider, model: def.model || modelsOf(def)[0], name: def.name };
+  }
+  function isDefaultChoice() {
+    if (!chosen || !keyInfo) return false;
+    var k = keyInfo.keys.filter(function (x) { return x.provider === chosen.provider; })[0];
+    return keyInfo.defaultProvider === chosen.provider && k && k.model === chosen.model;
+  }
+  function drawMenu() {
+    live = !!chosen;
+    document.getElementById('model-current').textContent = chosen ? chosen.model : 'None connected';
+    document.getElementById('mode-pill').textContent = chosen ? 'GATED' : 'GATED · NOTES ONLY';
+    var h = '<div class="stack" style="gap:4px"><span style="font-weight:800">Choose the model to chat with</span>' +
+      '<span class="small muted">Whatever you pick, every question is checked against your tree first.</span></div>';
+    if (serverErr) {
+      h += '<div class="note note-soft"><span>' + esc(serverErr) + '</span></div>';
+    } else {
+      h += '<label class="sr-only" for="model-filter">Filter models</label><input type="text" id="model-filter" placeholder="Filter models…" value="' + esc(filter) + '" autocomplete="off">';
+    }
+    h += '<div class="stack" style="gap:12px">' + PROVIDERS.map(function (P) {
+      var k = keyInfo && keyInfo.keys.filter(function (x) { return x.provider === P[0]; })[0];
+      var list = k ? modelsOf(k) : [];
+      var head = '<div class="split" style="align-items:center"><span class="small" style="font-weight:800">' + P[1] + '</span>' +
+        (k && keyInfo.defaultProvider === P[0] ? '<span class="pill pill-blue">Default provider</span>' : '') + '</div>';
+      if (!k || !list.length) {
+        var why = serverErr ? 'Not available here.'
+          : !k ? 'Not connected. <a href="settings.html">Add a key</a>' : 'Connected, but no model list yet. <a href="settings.html">Test the connection</a>';
+        return '<div class="stack" style="gap:4px">' + head + '<span class="small muted">' + why + '</span></div>';
+      }
+      var shown = list.filter(function (m) { return !filter || m.toLowerCase().indexOf(filter.toLowerCase()) !== -1; }).slice(0, 60);
+      return '<fieldset class="stack" style="gap:2px;border:0;margin:0;padding:0"><legend class="sr-only">' + P[1] + ' models</legend>' + head +
+        (shown.length ? shown.map(function (m) {
+          var on = chosen && chosen.provider === P[0] && chosen.model === m;
+          return '<label class="model-opt"><input type="radio" name="model-choice" value="' + esc(P[0] + '|' + m) + '"' + (on ? ' checked' : '') + '>' +
+            '<span class="mono">' + esc(m) + '</span>' + (m === k.model ? '<span class="small muted">your default</span>' : '') + '</label>';
+        }).join('') : '<span class="small muted">No models match.</span>') +
+        (list.length > shown.length && !filter ? '<span class="small muted">' + (list.length - shown.length) + ' more: use the filter</span>' : '') + '</fieldset>';
+    }).join('') + '</div>';
+    h += '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px">' +
+      (chosen && !serverErr ? '<button class="btn" type="button" id="make-default"' + (isDefaultChoice() ? ' disabled' : '') + '>' + (isDefaultChoice() ? 'This is your default' : 'Make this my default') + '</button>' : '') +
+      '<a href="settings.html" style="font-weight:700;font-size:14px;margin-left:auto">Manage keys</a></div>';
+    var panel = document.getElementById('model-panel');
+    panel.innerHTML = h;
+
+    var f = document.getElementById('model-filter');
+    if (f) f.addEventListener('input', function () { filter = f.value; drawMenu(); var nf = document.getElementById('model-filter'); nf.focus(); nf.setSelectionRange(filter.length, filter.length); });
+    panel.querySelectorAll('input[name="model-choice"]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        var v = r.value, i = v.indexOf('|'), prov = v.slice(0, i);
+        chosen = { provider: prov, model: v.slice(i + 1), name: PROVIDERS.filter(function (P) { return P[0] === prov; })[0][1] };
+        saveChoice(); drawMenu(); status();
+        document.getElementById('model-menu').open = false;
+        push({ role: 'ai', kind: 'switch', text: 'Switched to ' + chosen.model + ' (' + chosen.name + '). Your next questions go to this model.' });
+      });
+    });
+    var md = document.getElementById('make-default');
+    if (md) md.addEventListener('click', function () {
+      RW.api('/api/keys/' + chosen.provider, { method: 'PUT', body: { user: 'alex', model: chosen.model } })
+        .then(function () { return RW.api('/api/default', { method: 'PUT', body: { user: 'alex', provider: chosen.provider } }); })
+        .then(function (r) { keyInfo = r; drawMenu(); })
+        .catch(function (err) { serverErr = err.message; drawMenu(); });
+    });
+  }
+  function status() {
+    var s = document.getElementById('status');
+    if (chosen) s.innerHTML = 'Chatting with <b>' + esc(chosen.model) + '</b> · ' + esc(chosen.name) + '. Every question is checked against your tree first.';
+    else if (serverErr) s.textContent = RW.isLocal()
+      ? 'No AI model is connected here. Every question is still checked against your tree, and allowed ones show your tree\u2019s notes.'
+      : 'No AI model is connected here. Every question is still checked against your tree, and allowed ones show your tree\u2019s notes.';
+    else s.innerHTML = 'No model connected yet, so you\'ll get your tree\'s notes instead of answers. <a href="settings.html">Add your API key</a>';
+  }
+  function setup() {
+    RW.api('/api/keys?user=alex').then(function (r) {
+      keyInfo = r; chooseInitial();
+      if (!chosen) example();
+      drawMenu(); status();
+    }).catch(function (err) {
+      serverErr = err.message; chosen = null;
+      example(); drawMenu(); status();
+    });
+  }
+  // close the menu with Escape or a click outside it
+  document.addEventListener('keydown', function (e) { var m = document.getElementById('model-menu'); if (e.key === 'Escape' && m.open) { m.open = false; m.querySelector('summary').focus(); } });
+  document.addEventListener('click', function (e) { var m = document.getElementById('model-menu'); if (m.open && !m.contains(e.target)) m.open = false; });
+
+  sidebar(); render(); setup();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>verifAI · Team</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</head>
+<body>
+<header id="rw-header"></header>
+<main class="wrap stack">
+  <div class="stack" style="gap:6px">
+    <h1 class="title-xl">Platform team</h1>
+    <p class="muted">6 engineers · Python, TypeScript, Go · you're viewing as Maria Keller (manager)</p>
+  </div>
+
+  <div class="grid-auto" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))" id="kpis"></div>
+
+  <div class="row">
+    <div class="grow stack">
+      <section class="card" aria-label="Active goals"><h2 class="title-m">Active goals</h2><div id="goals"></div></section>
+
+      <section class="card" aria-label="Guided tasks">
+        <div class="stack" style="gap:4px">
+          <h2 class="title-m">Guided tasks in progress</h2>
+          <p class="muted" style="font-size:14px">Real work people are learning through. Know someone already has a concept? Mark it as known and it's verified right away. Spot a gap? Add it and the tutor teaches it in this task.</p>
+        </div>
+        <div class="stack" style="gap:14px" id="tasks"></div>
+      </section>
+
+      <section class="card" aria-label="People">
+        <h2 class="title-m">People</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Name</th><th>Level</th><th>Python</th><th>TypeScript</th><th>Go</th><th>Working on</th><th>Last verified</th></tr></thead>
+          <tbody id="people"></tbody>
+        </table></div>
+        <p class="small muted">Counts show verified concepts out of the tree's total. The assistant's reach for each person follows these numbers.</p>
+      </section>
+    </div>
+
+    <aside class="card side" id="set-goal" aria-label="Set a goal">
+      <form id="goal-form" class="stack" style="gap:16px">
+        <div class="stack" style="gap:4px"><h2 class="title-m">Set a goal</h2><p class="muted" style="font-size:14px">Pick a concept people should verify by a date.</p></div>
+        <label class="field" for="g-lang">Language<select id="g-lang"></select></label>
+        <label class="field" for="g-concept">Concept<select id="g-concept"></select><span class="small muted" style="font-weight:500" id="g-req"></span></label>
+        <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+          <legend style="font-size:14px;font-weight:700;margin-bottom:6px">Who</legend>
+          <label style="display:flex;align-items:center;gap:10px;font-size:14px;min-height:32px"><input type="radio" name="g-who" value="team" checked style="width:18px;height:18px;accent-color:#5B5BD6">Whole team (6)</label>
+          <label style="display:flex;align-items:center;gap:10px;font-size:14px;min-height:32px"><input type="radio" name="g-who" value="alex" style="width:18px;height:18px;accent-color:#5B5BD6">Alex Lindner</label>
+        </fieldset>
+        <label class="field" for="g-due">Due date<input id="g-due" type="date" required></label>
+        <button class="btn btn-primary" type="submit">Set goal</button>
+        <p class="small" id="g-msg" role="status"></p>
+      </form>
+    </aside>
+  </div>
+</main>
+<footer id="rw-footer"></footer>
+
+<script>
+RW.initPage('team.html', { role: 'manager' });
+(function () {
+  var D = RW.D, esc = RW.esc;
+
+  function alexCounts() {
+    var o = {};
+    D.lanes.forEach(function (l) { var s = RW.laneStats(l.id); o[l.id] = s.ver + '/' + s.total; });
+    return o;
+  }
+
+  function render() {
+    var s = RW.load();
+    var all = RW.allNodes();
+    var aVer = all.filter(function (n) { return n.status === 'verified'; }).length;
+    var goals = RW.goals().map(function (g) {
+      var n = RW.node(g.node), done = g.othersDone + (n.status === 'verified' ? 1 : 0);
+      var pct = Math.round(done / g.size * 100);
+      var cls = done >= g.size ? ['Done', 's-done'] : (pct >= 34 ? ['On track', 's-track'] : ['At risk', 's-risk']);
+      return { g: g, n: n, done: done, pct: pct, cls: cls };
+    });
+    var onTrack = goals.filter(function (x) { return x.cls[0] !== 'At risk'; }).length;
+
+    document.getElementById('kpis').innerHTML = [
+      ['Concepts verified (team)', 41 + aVer],
+      ['Goals on track or done', onTrack + ' <span class="muted" style="font-size:18px;font-weight:600">of ' + goals.length + '</span>'],
+      ['Guided tasks running', RW.tasks().length + 1],
+      ['Assistant requests sent to lessons', 58]
+    ].map(function (k) { return '<div class="card card-tight" style="gap:6px"><span class="small muted">' + k[0] + '</span><span class="kpi">' + k[1] + '</span></div>'; }).join('');
+
+    document.getElementById('goals').innerHTML = goals.map(function (x) {
+      return '<div class="goal-row"><div style="flex:1 1 260px;display:flex;flex-direction:column;gap:4px"><span style="font-weight:700">' + x.n.laneName + ' · ' + esc(x.n.name) + '</span><span class="small muted">' + esc(x.g.who) + ' · due ' + x.g.due + '</span></div>' +
+        '<div style="flex:1 1 200px;display:flex;align-items:center;gap:12px"><div class="bar" style="flex:1;height:8px"><span style="width:' + x.pct + '%"></span></div><span style="font-weight:700;min-width:36px">' + x.done + '/' + x.g.size + '</span></div>' +
+        '<span class="status ' + x.cls[1] + '">' + x.cls[0] + '</span></div>';
+    }).join('');
+
+    // Alex's guided tasks: concepts the tutor teaches + the ones each relies on that Maria marked known
+    var ACT = { known: 'Mark as known', undo: 'Undo', remove: 'Remove' };
+    var alexTasks = RW.tasks().map(function (T) {
+      var rows = T.teaches.map(function (id) {
+        var n = RW.node(id), extra = T.extra.indexOf(id) !== -1;
+        if (n.status === 'verified') return [n, n.byManager ? 'Marked known by you' : 'Verified by check', n.byManager ? 's-track' : 's-done', n.byManager ? 'undo' : ''];
+        return [n, extra ? 'Added by you' : 'Tutor teaching', extra ? 's-risk' : 's-track', extra ? 'remove' : 'known'];
+      });
+      T.uses.forEach(function (id) {
+        var n = RW.node(id);
+        if (n.byManager) rows.push([n, 'Marked known by you', 's-track', 'undo']);
+      });
+      var addable = all.filter(function (n) { return n.lane === T.lane && n.status !== 'verified' && T.teaches.indexOf(n.id) === -1; });
+      return '<div class="card card-tight" style="gap:12px"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">' +
+        '<span class="avatar" style="width:32px;height:32px;font-size:12px">AL</span><div style="flex:1 1 240px;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700">' + esc(T.title) + '</span>' +
+        '<span class="small muted">Alex Lindner · ' + T.laneName + ' · ' + esc(T.ticket) + ' · step ' + T.step + ' of ' + T.steps.length + '</span></div>' +
+        '<a class="btn" href="guided-task.html?task=' + T.id + '" style="min-height:44px">Open task</a></div>' +
+        rows.map(function (r) {
+          return '<div class="concept-row"><span style="flex:1 1 180px;font-size:14px;font-weight:600">' + esc(r[0].name) + '</span><span class="status ' + r[2] + '">' + r[1] + '</span>' +
+            (r[3] ? '<button class="link-btn" data-act="' + r[3] + '" data-id="' + r[0].id + '" data-task="' + T.id + '">' + ACT[r[3]] + '</button>' : '<span style="width:8px"></span>') + '</div>';
+        }).join('') +
+        (addable.length ? '<form class="add-form" data-task="' + T.id + '" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><label class="sr-only" for="add-' + T.id + '">Concept to add</label><select id="add-' + T.id + '" style="flex:1 1 220px">' +
+          addable.map(function (n) { return '<option value="' + n.id + '">' + esc(n.name) + '</option>'; }).join('') +
+          '</select><button class="btn" type="submit">+ Add concept</button></form>' : '') + '</div>';
+    }).join('');
+    var alexTask = alexTasks || '<p class="small muted">Alex has no guided tasks running.</p>';
+
+    var o = D.otherTask, oc = s.other;
+    var otherTask = '<div class="card card-tight" style="gap:12px"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">' +
+      '<span class="avatar" style="width:32px;height:32px;font-size:12px;background:var(--soft);color:var(--text2)">' + o.initials + '</span><div style="flex:1 1 240px;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700">' + esc(o.title) + '</span>' +
+      '<span class="small muted">' + o.person + ' · Python · ' + o.id + ' · step ' + o.step + '</span></div></div>' +
+      o.concepts.map(function (c, i) {
+        var known = oc[i] === 'known';
+        var label = known ? 'Marked known by you' : (c[1] === 'added' ? 'Added by you' : 'Tutor teaching');
+        var cls = known ? 's-track' : (c[1] === 'added' ? 's-risk' : 's-track');
+        return '<div class="concept-row"><span style="flex:1 1 180px;font-size:14px;font-weight:600">' + esc(c[0]) + '</span><span class="status ' + cls + '">' + label + '</span>' +
+          '<button class="link-btn" data-other="' + i + '">' + (known ? 'Undo' : (c[1] === 'added' ? 'Remove' : 'Mark as known')) + '</button></div>';
+      }).join('') + '</div>';
+
+    var tasks = document.getElementById('tasks');
+    tasks.innerHTML = alexTask + otherTask;
+    tasks.querySelectorAll('[data-act]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-id'), act = b.getAttribute('data-act');
+        if (act === 'known') RW.verify(id, 'manager');
+        if (act === 'undo') RW.unverify(id);
+        if (act === 'remove') RW.updateTask(b.getAttribute('data-task'), function (t) { t.extra = (t.extra || []).filter(function (x) { return x !== id; }); });
+        render();
+      });
+    });
+    tasks.querySelectorAll('[data-other]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var i = b.getAttribute('data-other');
+        RW.update(function (s) { s.other[i] = s.other[i] === 'known' ? '' : 'known'; });
+        render();
+      });
+    });
+    tasks.querySelectorAll('.add-form').forEach(function (af) {
+      af.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var tid = af.getAttribute('data-task'), id = document.getElementById('add-' + tid).value, T = RW.task(tid);
+        RW.updateTask(tid, function (t) { t.extra = (t.extra || []).concat([id]); });
+        RW.update(function (s) { s.activity.unshift({ text: D.manager.name + ' added ' + RW.NODE[id].name + ' to guided task: ' + T.title, when: RW.today(), kind: 'manager' }); });
+        render();
+      });
+    });
+
+    var ac = alexCounts();
+    var alv = RW.level();
+    var people = [{ initials: 'AL', name: 'Alex Lindner', role: 'Backend', level: 'Lv ' + alv.num + ' · ' + alv.name, py: ac.py, ts: ac.ts, go: ac.go, current: RW.activeTask() ? 'Guided task · ' + RW.activeTask().title : 'No guided task', last: '' }].concat(D.people);
+    var lastAlex = all.filter(function (n) { return n.status === 'verified'; }).map(function (n) { return n.date; }).filter(Boolean).pop();
+    people[0].last = (s.activity[0] && s.activity[0].kind === 'verified') ? s.activity[0].when : (lastAlex || '');
+    document.getElementById('people').innerHTML = people.map(function (p) {
+      return '<tr><td><div class="person"><span class="avatar">' + p.initials + '</span><span style="display:flex;flex-direction:column"><b>' + esc(p.name) + '</b><span class="small muted">' + p.role + '</span></span></div></td>' +
+        '<td><span class="tag tag-accent" style="white-space:nowrap">' + p.level + '</span><br><span class="small muted">' + esc(D.career[parseInt(p.level.replace(/\D+/, ''), 10) - 1].position) + '</span></td><td class="mono">' + p.py + '</td><td class="mono">' + p.ts + '</td><td class="mono">' + p.go + '</td><td>' + esc(p.current) + '</td><td class="muted">' + p.last + '</td></tr>';
+    }).join('');
+  }
+
+  // goal form
+  var lang = document.getElementById('g-lang'), concept = document.getElementById('g-concept');
+  lang.innerHTML = D.lanes.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+  function fillConcepts() {
+    concept.innerHTML = D.nodes.filter(function (r) { return r[1] === lang.value; }).map(function (r) { return '<option value="' + r[0] + '">' + esc(r[4]) + '</option>'; }).join('');
+    showReq();
+  }
+  function showReq() { var n = RW.node(concept.value); document.getElementById('g-req').textContent = 'Requires: ' + n.reqNames; }
+  lang.addEventListener('change', fillConcepts);
+  concept.addEventListener('change', showReq);
+  fillConcepts();
+  var d = new Date(); d.setDate(d.getDate() + 30);
+  document.getElementById('g-due').value = d.toISOString().slice(0, 10);
+  document.getElementById('goal-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var due = document.getElementById('g-due').value.split('-');
+    var label = parseInt(due[2], 10) + '.' + parseInt(due[1], 10) + '.';
+    var team = document.querySelector('input[name="g-who"]:checked').value === 'team';
+    RW.addGoal(concept.value, team ? 'Whole team' : 'Alex', team ? 6 : 1, label);
+    document.getElementById('g-msg').textContent = 'Goal set. It now shows on the tree with a ' + label + ' deadline.';
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

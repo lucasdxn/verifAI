@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>verifAI · System architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#F5F5FA; --card:#FFFFFF; --border:#DCDCEA; --text:#191928; --muted:#55556A; --line:#8C8CA8; --accent:#5B5BD6; --accent-strong:#3F3FB0; --band:#ECECFD; --ai:#B4580A; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#15141A; --card:#1E1D25; --border:#34333E; --text:#EDEDF3; --muted:#A6A6B4; --line:#7A7A90; --accent:#7C7CF0; --accent-strong:#C9C9FB; --band:#22223A; --ai:#F2AE48; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg:#15141A; --card:#1E1D25; --border:#34333E; --text:#EDEDF3; --muted:#A6A6B4; --line:#7A7A90; --accent:#7C7CF0; --accent-strong:#C9C9FB; --band:#22223A; --ai:#F2AE48; color-scheme: dark; }
+  .back { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 700; color: var(--accent); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: Manrope, system-ui, sans-serif; }
+  .page { max-width: 1760px; margin: 0 auto; padding-block: 24px 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  h1 { margin: 0 0 6px; font-size: 30px; font-weight: 800; letter-spacing: -0.01em; }
+  .lead { margin: 0 0 24px; max-width: 880px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+  .scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 18px; background: var(--bg); }
+  .dia { position: relative; width: 1648px; height: 960px; }
+  .card { position: absolute; width: 240px; height: 96px; padding: 12px 16px; display: flex; align-items: center; justify-content: center; text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; font-size: 14px; line-height: 20px; }
+  .card.ai { border-color: #A9AAF2; }
+  .card.gate { background: #5B5BD6; border-color: #5B5BD6; color: #fff; }
+  .card.ledger { background: #191928; border-color: #191928; color: #fff; }
+  .rules { position: absolute; left: 1024px; top: 64px; width: 560px; height: 168px; padding: 18px 20px; display: flex; align-items: center; background: var(--card); border: 1px dashed var(--border); border-radius: 14px; font-size: 14px; line-height: 22px; }
+  .band { position: absolute; left: 664px; top: 744px; width: 960px; height: 176px; border-radius: 18px; background: var(--band); }
+  .band-label { position: absolute; left: 680px; top: 884px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; color: var(--accent-strong); }
+  .lbl { position: absolute; font-size: 13px; line-height: 16px; color: var(--muted); }
+  .lbl.a { color: var(--accent-strong); }
+  svg.lines { position: absolute; inset: 0; overflow: visible; }
+  .foot { margin-top: 16px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="index.html" id="back">← Back to verifAI</a>
+  <h1>verif<span style="color:var(--ai)">AI</span> · system architecture</h1>
+  <p class="lead">The skill ledger is the single source of truth. Every assistant request passes the AI gate, which only lets the model use concepts the ledger says you've proven. Each user brings their own provider key and picks the model.</p>
+
+  <div class="scroll"><div class="dia" role="img" aria-label="Architecture diagram: learner app and manager dashboard connect through an API gateway to the curriculum, verification, goals and guided task services. Verified skills go to the skill ledger. Assistant requests pass the AI gate, which checks the ledger and calls the user's chosen model with their encrypted key.">
+    <div class="band"></div>
+    <div class="band-label">RESPONSIBLE-AI LAYER</div>
+
+    <svg class="lines" width="1648" height="960" aria-hidden="true">
+      <defs>
+        <marker id="h" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#8C8CA8"/></marker>
+        <marker id="ha" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#5B5BD6"/></marker>
+      </defs>
+      <g fill="none" stroke="#8C8CA8" stroke-width="2" stroke-linecap="round">
+        <path d="M 304 184 L 379 184" marker-end="url(#h)"/>
+        <path d="M 304 624 L 379 624" marker-end="url(#h)"/>
+        <path d="M 624 184 L 699 184" marker-end="url(#h)"/>
+        <path d="M 624 424 L 699 424" marker-end="url(#h)"/>
+        <path d="M 624 624 L 699 624" marker-end="url(#h)"/>
+        <path d="M 824 232 L 824 371" marker-end="url(#h)"/>
+        <path d="M 944 424 L 1019 424" marker-end="url(#h)"/>
+        <path d="M 1264 424 L 1339 424" marker-end="url(#h)"/>
+        <path d="M 944 624 L 1104 624 L 1104 477" marker-end="url(#h)"/>
+        <path d="M 1464 672 L 1464 771" marker-end="url(#h)"/>
+      </g>
+      <g fill="none" stroke="#5B5BD6" stroke-width="2" stroke-linecap="round">
+        <path d="M 624 824 L 699 824" marker-end="url(#ha)"/>
+        <path d="M 944 824 L 1019 824" marker-end="url(#ha)"/>
+        <path d="M 1264 824 L 1339 824" marker-end="url(#ha)"/>
+        <path d="M 1184 776 L 1184 477" marker-end="url(#ha)"/>
+      </g>
+    </svg>
+
+    <div class="card" style="left:64px;top:136px"><span><b>Learner app</b><br>Tree, challenges, guided tasks, settings</span></div>
+    <div class="card" style="left:64px;top:576px"><span><b>Manager dashboard</b><br>Progress, goals, marking concepts known</span></div>
+    <div class="card" style="left:384px;top:136px;height:736px"><span><b>API gateway</b><br>Company SSO, roles<br>(learner, manager)</span></div>
+    <div class="card" style="left:704px;top:136px"><span><b>Curriculum service</b><br>Trees per language, lessons, prerequisites</span></div>
+    <div class="card" style="left:704px;top:376px"><span><b>Verification service</b><br>Sandboxed runner, hidden tests, paste checks</span></div>
+    <div class="card" style="left:704px;top:576px"><span><b>Goals &amp; overrides</b><br>Deadlines, manager marks known or adds</span></div>
+    <div class="card ai" style="left:704px;top:776px"><span><b>Guided task tutor</b><br>Teaches step by step, then queues end checks</span></div>
+    <div class="card ledger" style="left:1024px;top:376px"><span><b>Skill ledger</b><br>Verified concepts per person, source of truth</span></div>
+    <div class="card" style="left:1344px;top:376px"><span><b>Audit log</b><br>Every unlock, override and gate decision</span></div>
+    <div class="card" style="left:1344px;top:576px"><span><b>Key vault</b><br>Each user's API keys, AES-256-GCM encrypted</span></div>
+    <div class="card gate" style="left:1024px;top:776px"><span><b>AI gate</b><br>Maps each request to concepts, allows or teaches</span></div>
+    <div class="card ai" style="left:1344px;top:776px"><span><b>User's chosen model</b><br>Claude, GPT, Gemini, Mistral or custom</span></div>
+
+    <div class="rules"><span><b>How the gate decides</b><br>1. Every concept the request needs is verified: the model may write the code.<br>2. Some aren't: it explains them and links the lesson, or offers a guided task.<br>3. In a guided task: it teaches and reviews, the learner writes.</span></div>
+
+    <div class="lbl" style="left:836px;top:294px">challenges</div>
+    <div class="lbl" style="left:956px;top:396px">passed</div>
+    <div class="lbl" style="left:1286px;top:396px">logs</div>
+    <div class="lbl" style="left:1116px;top:540px">writes</div>
+    <div class="lbl a" style="left:1196px;top:616px">checks skills</div>
+    <div class="lbl" style="left:1476px;top:716px">their key</div>
+    <div class="lbl a" style="left:1272px;top:796px">allowed</div>
+  </div></div>
+  <script>
+    // Scale the fixed-size diagram down to fit the window (never below 55%, then it scrolls).
+    (function () {
+      var box = document.querySelector('.scroll'), dia = document.querySelector('.dia');
+      function fit() {
+        var s = Math.max(0.55, Math.min(1, (box.clientWidth - 2) / 1648));
+        dia.style.transform = 'scale(' + s + ')';
+        dia.style.transformOrigin = '0 0';
+        box.style.height = Math.ceil(960 * s) + 2 + 'px';
+        box.style.overflowX = s === 0.55 ? 'auto' : 'hidden';
+        dia.parentNode.style.width = s === 0.55 ? Math.ceil(1648 * s) + 'px' : '';
+      }
+      var wrap = document.createElement('div');
+      dia.parentNode.insertBefore(wrap, dia); wrap.appendChild(dia);
+      window.addEventListener('resize', fit); fit();
+    })();
+  </script>
+  <script>try{var st=JSON.parse(localStorage.getItem("rootwise-demo-v1")||"{}");if(st.role)document.getElementById("back").href=st.role==="manager"?"team.html":"home.html";}catch(e){}</script>
+  <p class="foot">In the local demo, the gate is a system prompt built from your verified concepts (server/server.js). A production version would also check the model's output before showing it.</p>
+</div>
+</body>
+</html>

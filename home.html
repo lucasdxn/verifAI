@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>verifAI · Home</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</head>
+<body>
+<header id="rw-header"></header>
+<main class="wrap stack">
+
+  <div class="stack" style="gap:6px">
+    <h1 class="title-xl">Welcome back, Alex</h1>
+    <p class="muted" id="intro"></p>
+  </div>
+
+  <section class="card" id="level" aria-label="Your developer level">
+    <div class="row" style="align-items:center;gap:24px">
+      <span class="ring" id="lv-ring" style="width:96px;height:96px"><span style="width:80px;height:80px;flex-direction:column;gap:0"><span class="small muted" style="font-family:Manrope,system-ui,sans-serif;font-weight:700">Level</span><span id="lv-num" style="font-size:28px;font-weight:600;color:var(--accent-strong);line-height:1"></span></span></span>
+      <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:8px">
+        <span class="eyebrow accent">Your developer level</span>
+        <span class="title-l" id="lv-name"></span>
+        <span style="display:flex;flex-wrap:wrap;gap:8px;align-items:center" id="lv-career"></span>
+        <span class="muted" style="font-size:14px" id="lv-xp"></span>
+        <div class="lv-steps" id="lv-steps"></div>
+      </div>
+      <div style="flex:1 1 300px;display:flex;flex-direction:column;gap:10px">
+        <span class="small" style="font-weight:700">By language</span>
+        <div class="stack" style="gap:8px" id="lv-langs"></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <span class="small" style="font-weight:700;margin-right:4px">Quickest way to level up:</span>
+      <span id="lv-suggest" style="display:flex;flex-wrap:wrap;gap:8px"></span>
+      <span class="small muted" style="margin-left:auto">XP per verified concept: Basics 10 · Core 20 · Data work 30 · Integration 40 · Advanced 50</span>
+    </div>
+  </section>
+
+  <section class="card" id="career" aria-label="Career ladder">
+    <div class="split" style="align-items:baseline">
+      <div class="stack" style="gap:4px">
+        <h2 class="title-m">Career ladder</h2>
+        <p class="muted" style="font-size:14px">The position each level matches and what it typically pays. Salaries are indicative and vary by city, company and stack.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table style="min-width:820px">
+        <thead><tr><th>Level</th><th>Position</th><th>How to get there</th><th>Germany · EUR gross / year</th><th>US · USD base / year</th></tr></thead>
+        <tbody id="ladder"></tbody>
+      </table>
+    </div>
+    <p class="small muted" id="sources"></p>
+  </section>
+
+  <div class="row">
+    <section class="card grow" aria-label="Continue">
+      <span class="eyebrow accent">Continue where you left off</span>
+      <div class="row" style="align-items:center">
+        <span class="ring" id="task-ring" style="width:72px;height:72px"><span style="width:58px;height:58px;font-size:14px;color:var(--accent-strong)" id="task-step"></span></span>
+        <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:4px">
+          <span class="title-m" id="task-title"></span>
+          <span class="muted small" id="task-sub"></span>
+          <span class="muted small" id="task-teaches"></span>
+        </div>
+        <a class="btn btn-primary" href="guided-task.html" id="task-go">Continue task</a>
+      </div>
+    </section>
+
+    <section class="card side" aria-label="Start a task">
+      <span class="eyebrow">Have a real task?</span>
+      <p style="font-size:14px;color:var(--text2)">Describe it. If it needs concepts you haven't verified, the assistant turns it into a guided task and teaches you along the way.</p>
+      <form id="task-form" class="stack" style="gap:10px">
+        <label class="field" for="task-input">What do you need to build?
+          <input id="task-input" type="text" placeholder="e.g. Export invoices to CSV every night">
+        </label>
+        <button class="btn btn-soft" type="submit">Plan it with the assistant</button>
+      </form>
+      <p class="small muted" id="task-form-msg" hidden>Demo: this opens the guided task that's already planned.</p>
+    </section>
+  </div>
+
+  <section class="stack" style="gap:12px" aria-label="Your learning tree">
+    <div class="split">
+      <h2 class="title-m">Your learning tree</h2>
+      <a href="tree.html" style="font-weight:700;font-size:14px;min-height:44px;display:inline-flex;align-items:center">Open full tree</a>
+    </div>
+    <div class="grid-auto" id="langs"></div>
+  </section>
+
+  <div class="row">
+    <section class="card side" aria-label="Challenges">
+      <h2 class="title-m">Challenges</h2>
+      <div class="stack" style="gap:10px" id="challenges"></div>
+    </section>
+    <section class="card side" aria-label="Team goals">
+      <h2 class="title-m">Team goals for you</h2>
+      <div id="goals"></div>
+    </section>
+    <section class="card side" aria-label="Recent activity">
+      <h2 class="title-m">Recent</h2>
+      <div class="stack" style="gap:12px" id="activity"></div>
+    </section>
+  </div>
+
+  <section class="dark-band" aria-label="About">
+    <div style="flex:1 1 420px;display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:17px;font-weight:800">Learn it, prove it, then let AI build with it</span>
+      <span class="muted small">The assistant only writes code with concepts you've verified. Everything else it teaches you first.</span>
+    </div>
+    <a class="btn btn-dark" href="tree.html">See your tree</a>
+    <a class="btn btn-ghost-dark" href="assistant.html">Ask the assistant</a>
+  </section>
+</main>
+<footer id="rw-footer"></footer>
+
+<script>
+RW.initPage('home.html', { role: 'dev' });
+(function () {
+  var D = RW.D, esc = RW.esc;
+  var all = RW.allNodes();
+  var verified = all.filter(function (n) { return n.status === 'verified'; }).length;
+  document.getElementById('intro').textContent = 'You have ' + verified + ' verified concepts. The assistant can build with those; everything else you learn first.';
+
+  // developer level
+  var lv = RW.level();
+  document.getElementById('lv-ring').style.background = 'conic-gradient(#5B5BD6 ' + lv.pct + '%, var(--track) 0)';
+  document.getElementById('lv-num').textContent = lv.num;
+  document.getElementById('lv-name').textContent = lv.name;
+  document.getElementById('lv-career').innerHTML = '<span class="tag tag-accent">' + esc(lv.position) + '</span>' +
+    '<span class="tag">' + esc(lv.eur) + ' <span class="muted" style="font-weight:500">&nbsp;Germany</span></span>' +
+    '<span class="tag">' + esc(lv.usd) + ' <span class="muted" style="font-weight:500">&nbsp;US</span></span>' +
+    '<a class="small" href="#career" style="font-weight:700">Career ladder</a>';
+  document.getElementById('lv-xp').textContent = !lv.nextName
+    ? lv.xp + ' XP · top level reached'
+    : lv.requirement
+      ? lv.xp + ' XP · next: ' + lv.nextName + '. ' + lv.requirement + ' (' + lv.pct + '% there).'
+      : lv.xp + ' XP · ' + lv.toNext + ' XP to level ' + (lv.num + 1) + ' (' + lv.nextName + ')';
+  document.getElementById('lv-steps').innerHTML = RW.LEVELS.map(function (L, i) {
+    var cls = i + 1 < lv.num ? 'on' : (i + 1 === lv.num ? 'on cur' : '');
+    return '<div class="lv-step ' + cls + '"' + (i + 1 === lv.num ? ' aria-current="step"' : '') + '><i' + (i + 1 === lv.num ? ' style="--p:100%"' : '') + '></i><span>' + L[1] + '</span></div>';
+  }).join('');
+
+  // career ladder
+  var CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  document.getElementById('ladder').innerHTML = D.career.map(function (c, i) {
+    var num = i + 1, here = num === lv.num, done = num < lv.num;
+    var how = i === 0 ? 'Where everyone starts' : i < 6 ? RW.LEVELS[i][0] + ' XP' : 'Senior in TypeScript and in Python or Go';
+    return '<tr' + (here ? ' style="background:var(--accent-soft)" aria-current="true"' : '') + '>' +
+      '<td><span style="display:flex;align-items:center;gap:8px;font-weight:700;white-space:nowrap">' +
+        '<span class="mono small" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;' + (done || here ? 'background:#5B5BD6;color:#fff' : 'background:var(--soft);color:var(--muted)') + '">' + (done ? CHECK : num) + '</span>' + esc(c.name) +
+        (here ? ' <span class="pill pill-blue">You</span>' : '') + '</span></td>' +
+      '<td>' + esc(c.position) + '</td>' +
+      '<td class="muted">' + how + '</td>' +
+      '<td style="font-variant-numeric:tabular-nums;white-space:nowrap">' + esc(c.eur) + '</td>' +
+      '<td style="font-variant-numeric:tabular-nums">' + esc(c.usd) + (c.note ? '<br><span class="small muted">' + esc(c.note) + '</span>' : '') + '</td></tr>';
+  }).join('');
+  document.getElementById('sources').innerHTML = 'Sources: ' + D.salarySources.map(function (s) {
+    return '<a href="' + s[1] + '" target="_blank" rel="noopener">' + esc(s[0]) + '</a>';
+  }).join(' · ') + '. The Germany source groups entry-level and junior pay together.';
+  document.getElementById('lv-langs').innerHTML = D.lanes.map(function (l) {
+    var x = RW.level(l.id);
+    return '<a href="tree.html" style="text-decoration:none;color:var(--text);display:flex;align-items:center;gap:10px;font-size:14px">' +
+      '<span style="width:88px;font-weight:700">' + l.name + '</span><span class="bar" style="flex:1"><span style="width:' + x.pct + '%;background:' + l.c + '"></span></span>' +
+      '<span style="width:150px;text-align:right"><b>Lv ' + x.num + '</b> <span class="muted">' + x.name + '</span></span></a>';
+  }).join('');
+  document.getElementById('lv-suggest').innerHTML = lv.suggest.length ? lv.suggest.map(function (c) {
+    return '<a class="tag tag-accent" style="text-decoration:none" href="tree.html?node=' + c.id + '">' + esc(c.name) + ' · +' + c.xp + ' XP</a>';
+  }).join('') : '<span class="muted small">Nothing left to unlock. Nice.</span>';
+
+  // guided task
+  var s = RW.load();
+  var at = RW.activeTask();
+  if (at) {
+    var teach = at.teaches.map(RW.node);
+    var finished = teach.every(function (n) { return n.status === 'verified'; });
+    var step = at.step, total = at.steps.length;
+    document.getElementById('task-ring').style.background = 'conic-gradient(#5B5BD6 ' + (finished ? 100 : Math.round(((step - 1) / total) * 100)) + '%, var(--track) 0)';
+    document.getElementById('task-step').textContent = finished ? 'done' : step + '/' + total;
+    document.getElementById('task-title').textContent = at.title;
+    var others = RW.tasks().length - 1;
+    document.getElementById('task-sub').textContent = 'Guided task · ' + at.laneName + ' · ' + at.ticket + (finished ? ' · finished, concepts unlocked' : ' · step ' + step + ' of ' + total) + (others > 0 ? ' · ' + others + ' more task' + (others > 1 ? 's' : '') : '');
+    document.getElementById('task-teaches').innerHTML = (finished ? 'Taught ' : 'Teaches ') + teach.map(function (n) { return '<b style="color:var(--text)">' + esc(n.name) + '</b>'; }).join(' and ');
+    document.getElementById('task-go').href = 'guided-task.html?task=' + at.id;
+  } else {
+    document.getElementById('task-ring').style.background = 'var(--track)';
+    document.getElementById('task-step').textContent = '0';
+    document.getElementById('task-title').textContent = 'No guided task running';
+    document.getElementById('task-sub').textContent = 'Pick one from the library or describe your own.';
+    document.getElementById('task-go').textContent = 'Start a task';
+  }
+
+  document.getElementById('task-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    document.getElementById('task-form-msg').hidden = false;
+    setTimeout(function () { location.href = 'guided-task.html'; }, 900);
+  });
+
+  // languages
+  document.getElementById('langs').innerHTML = D.lanes.map(function (l) {
+    var st = RW.laneStats(l.id), pct = Math.round(st.ver / st.total * 100);
+    return '<a href="tree.html' + (st.next ? '?node=' + st.next.id : '') + '" class="card card-tight" style="text-decoration:none;color:var(--text);flex-direction:row;align-items:center;gap:16px">' +
+      '<span class="ring" style="width:64px;height:64px;background:conic-gradient(' + l.c + ' ' + pct + '%, var(--track) 0)"><span style="width:52px;height:52px;font-size:15px;color:' + l.c + '">' + l.tag + '</span></span>' +
+      '<span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:17px;font-weight:800">' + l.name + '</span>' +
+      '<span class="muted small" style="font-size:14px">' + st.ver + ' of ' + st.total + ' verified · ' + st.learning + ' in progress</span>' +
+      (st.next ? '<span class="small" style="font-weight:700;color:' + l.c + '">Next: ' + esc(st.next.name) + '</span>' : '') + '</span></a>';
+  }).join('');
+
+  // challenges
+  var ch = [];
+  var asy = RW.node('py-async');
+  if (asy.status !== 'verified') ch.push(['Async & await', 'Started · attempt 1 of 3', 'Resume', 'challenge.html']);
+  all.filter(function (n) { return n.status === 'ready'; }).slice(0, 2).forEach(function (n) {
+    ch.push([n.name, n.laneName + ' · ready to start', 'Open', 'tree.html?node=' + n.id]);
+  });
+  document.getElementById('challenges').innerHTML = ch.map(function (c) {
+    return '<a class="list-link" href="' + c[3] + '"><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700">' + esc(c[0]) + '</span><span class="muted small">' + esc(c[1]) + '</span></span><span style="font-weight:700;color:var(--accent);font-size:14px">' + c[2] + '</span></a>';
+  }).join('');
+
+  // goals for me (not yet verified)
+  var mine = RW.goals().map(function (g) { return { g: g, n: RW.node(g.node) }; })
+    .filter(function (x) { return x.n.status !== 'verified'; }).slice(0, 4);
+  document.getElementById('goals').innerHTML = mine.length ? mine.map(function (x) {
+    return '<a href="tree.html?node=' + x.n.id + '" style="text-decoration:none;color:var(--text);display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)">' +
+      '<span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700">' + esc(x.n.name) + '</span><span class="muted small">' + x.n.laneName + ' · set by ' + D.manager.name + '</span></span><span class="chip">' + x.g.due + '</span></a>';
+  }).join('') : '<p class="muted">All your goals are done.</p>';
+
+  // activity
+  var acts = s.activity.concat(D.activity).slice(0, 5);
+  var col = { manager: '#5B5BD6', task: '#D97706', verified: '#0E8F86' };
+  document.getElementById('activity').innerHTML = acts.map(function (a) {
+    return '<div style="display:flex;gap:12px;align-items:flex-start;font-size:14px"><span class="dot" style="width:8px;height:8px;margin-top:7px;background:' + (col[a.kind] || '#888') + '"></span><span style="flex:1;color:var(--text2)">' + esc(a.text) + '</span><span class="mono small muted">' + a.when + '</span></div>';
+  }).join('');
+})();
+</script>
+</body>
+</html>

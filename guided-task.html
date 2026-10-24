@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>verifAI · Guided tasks</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<style>
+  .task-item { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid transparent; background: transparent; cursor: pointer; color: var(--text); }
+  .task-item:hover { background: var(--soft); }
+  .task-item[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); }
+  .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .tabs { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); align-self: flex-start; flex-wrap: wrap; }
+  .tabs button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; font-weight: 700; font-size: 14px; cursor: pointer; color: var(--muted); }
+  .tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-strong); }
+  .check-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .check-list label { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid var(--chip-border); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .check-list input { width: 16px; height: 16px; accent-color: #5B5BD6; }
+</style>
+</head>
+<body>
+<header id="rw-header"></header>
+<main class="wrap stack">
+  <div class="split" style="align-items:center">
+    <div class="stack" style="gap:2px;min-width:0">
+      <span class="eyebrow accent" id="g-eyebrow"></span>
+      <h1 class="title-l" id="g-title"></h1>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" id="g-actions"></div>
+  </div>
+  <div id="confirm" class="note note-warn" role="region" aria-label="Confirm" hidden style="flex-wrap:wrap;align-items:center;justify-content:space-between">
+    <span style="flex:1 1 360px" id="confirm-text"></span>
+    <span style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="confirm-yes" type="button"></button>
+      <button class="btn" id="confirm-no" type="button">Cancel</button>
+    </span>
+  </div>
+
+  <div class="row">
+    <aside class="stack" style="flex:1 1 300px;min-width:0;gap:16px" aria-label="Your tasks">
+      <section class="card card-tight" aria-label="Your guided tasks">
+        <div class="split" style="align-items:center"><span class="eyebrow">Your guided tasks</span></div>
+        <div class="stack" style="gap:4px" id="task-list"></div>
+        <button class="btn btn-soft" type="button" id="new-btn">+ Start a new task</button>
+      </section>
+      <section class="card card-tight" id="brief-card"><span class="eyebrow">Your task</span><p style="font-size:14px;color:var(--text2)" id="g-brief"></p></section>
+      <section class="card card-tight" id="concepts"></section>
+      <section class="card card-tight" id="steps-card" aria-label="Steps"><span class="eyebrow" id="steps-head"></span><div class="steps" id="steps"></div></section>
+    </aside>
+
+    <section class="stack" style="flex:999 1 520px;min-width:0;gap:16px" id="work"></section>
+
+    <section class="card side" style="padding:0;gap:0" aria-label="Tutor" id="tutor">
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+        <span style="font-size:15px;font-weight:800">Tutor</span>
+        <span class="pill pill-blue mono" style="margin-left:auto" id="mode-pill">TEACHING MODE</span>
+      </div>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <form id="ask-form" style="padding:16px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px">
+        <label for="ask-input" style="font-size:13px;font-weight:700">Ask or answer</label>
+        <div style="display:flex;gap:8px">
+          <input id="ask-input" type="text" placeholder="Ask the tutor about this step" style="flex:1;min-width:0" autocomplete="off">
+          <button class="btn btn-primary" style="width:46px;padding:0" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button>
+        </div>
+        <div id="model-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" hidden>
+          <label for="model-pick" class="small" style="font-weight:700">Model</label>
+          <select id="model-pick" style="flex:1;min-width:0;min-height:40px;font-size:13px"></select>
+        </div>
+        <span class="small muted" id="ai-status"></span>
+      </form>
+    </section>
+  </div>
+</main>
+<footer id="rw-footer"></footer>
+
+<script>
+RW.initPage('guided-task.html');
+(function () {
+  var D = RW.D, esc = RW.esc;
+  var params = new URLSearchParams(location.search);
+  var mode = 'task';            // 'task' or 'new'
+  var newTab = 'library';       // 'library' or 'own'
+  var learnHint = params.get('learn');
+  var live = false;             // a model is set up on the local server
+  var chatLog = [], answered = {};
+  var PICK_KEY = 'rootwise-tutor-model';
+  var CHECK_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  if (params.get('task') && RW.task(params.get('task'))) RW.setActive(params.get('task'));
+  if (learnHint && RW.NODE[learnHint]) { mode = 'new'; newTab = RW.D.library.some(function (t) { return t.teaches.indexOf(learnHint) !== -1; }) ? 'library' : 'own'; }
+  if (!RW.activeTask()) mode = 'new';
+
+  function cur() { return RW.activeTask(); }
+  function re(list) { return (list || []).map(function (s) { return new RegExp(s, 'i'); }); }
+  function commentFor(lane) { return lane === 'py' ? '# ' : '// '; }
+  function toast(text) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = text;
+    document.body.appendChild(t); setTimeout(function () { t.remove(); }, 3000);
+  }
+
+  // ---------- confirm (reset / delete) ----------
+  var confirmAction = null;
+  function ask(text, yes, fn) {
+    document.getElementById('confirm-text').innerHTML = text;
+    document.getElementById('confirm-yes').textContent = yes;
+    confirmAction = fn;
+    document.getElementById('confirm').hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('confirm-no').focus();
+  }
+  function closeConfirm() { document.getElementById('confirm').hidden = true; confirmAction = null; }
+  document.getElementById('confirm-yes').addEventListener('click', function () { var f = confirmAction; closeConfirm(); if (f) f(); });
+  document.getElementById('confirm-no').addEventListener('click', closeConfirm);
+
+  function askReset(t) {
+    ask('<b>Reset "' + esc(t.title) + '"?</b> Your code and chat are cleared and you start again at step 1. Concepts you unlocked in this task\'s checks lock again. Concepts Maria marked as known stay verified.', 'Reset task', function () {
+      RW.resetTask(t.id); chatLog = []; answered = {}; RW.header('guided-task.html'); renderAll(); toast('Task reset. You’re back at step 1.');
+    });
+  }
+  function askDelete(t) {
+    ask('<b>Delete "' + esc(t.title) + '"?</b> The task, your code and its progress are removed. Concepts you already unlocked through it stay verified.', 'Delete task', function () {
+      RW.deleteTask(t.id); chatLog = []; answered = {};
+      if (!RW.activeTask()) mode = 'new';
+      renderAll(); toast('Task deleted.');
+    });
+  }
+
+  // ---------- header + list ----------
+  function headerArea() {
+    var t = cur(), a = document.getElementById('g-actions');
+    if (mode === 'new' || !t) {
+      document.getElementById('g-eyebrow').textContent = 'Guided tasks';
+      document.getElementById('g-title').textContent = 'Start a new task';
+      a.innerHTML = RW.activeTask() ? '<button class="btn" type="button" id="back-btn">Back to ' + esc(RW.activeTask().title) + '</button>' : '';
+      var b = document.getElementById('back-btn');
+      if (b) b.addEventListener('click', function () { mode = 'task'; renderAll(); });
+      return;
+    }
+    document.getElementById('g-eyebrow').textContent = 'Guided task · ' + t.laneName + ' · ' + t.ticket;
+    document.getElementById('g-title').textContent = t.title;
+    a.innerHTML = '<span class="tag" style="padding:8px 12px;display:inline-flex;gap:8px;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Visible to Maria Keller (manager)</span>' +
+      '<button class="btn" type="button" id="reset-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Reset task</button>' +
+      '<button class="btn" type="button" id="delete-btn" style="color:var(--bad-text)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>Delete task</button>';
+    document.getElementById('reset-btn').addEventListener('click', function () { askReset(t); });
+    document.getElementById('delete-btn').addEventListener('click', function () { askDelete(t); });
+  }
+
+  function taskList() {
+    var all = RW.tasks(), act = cur();
+    var el = document.getElementById('task-list');
+    el.innerHTML = all.length ? all.map(function (t) {
+      var open = t.teaches.map(RW.node).filter(function (n) { return n.status !== 'verified'; }).length;
+      var state = open === 0 ? 'Done · concepts unlocked' : 'Step ' + t.step + ' of ' + t.steps.length;
+      var on = mode === 'task' && act && act.id === t.id;
+      return '<button class="task-item" type="button" data-task="' + t.id + '" ' + (on ? 'aria-current="true"' : 'aria-current="false"') + '><span style="font-weight:700;font-size:14px">' + esc(t.title) + '</span>' +
+        '<span class="small muted">' + t.laneName + ' · ' + esc(t.ticket) + ' · ' + state + '</span></button>';
+    }).join('') : '<p class="small muted">No guided tasks yet.</p>';
+    el.querySelectorAll('[data-task]').forEach(function (b) {
+      b.addEventListener('click', function () { RW.setActive(b.getAttribute('data-task')); mode = 'task'; chatLog = []; answered = {}; closeConfirm(); renderAll(); });
+    });
+  }
+  document.getElementById('new-btn').addEventListener('click', function () { mode = 'new'; closeConfirm(); renderAll(); });
+
+  // ---------- task side panels ----------
+  function concepts(t) {
+    var learn = t.teaches.map(RW.node);
+    var html = '<span class="eyebrow">Concepts in this task</span><div class="stack" style="gap:8px"><span class="small" style="font-weight:700">You\'ll learn</span><div style="display:flex;flex-wrap:wrap;gap:6px">' +
+      learn.map(function (n) {
+        var note = t.extra.indexOf(n.id) !== -1 ? ' · added by Maria' : '';
+        var st = n.status === 'verified' ? (n.byManager ? ' · marked known' : ' · verified') : '';
+        return '<span class="tag ' + (n.status === 'verified' ? '' : 'tag-accent') + '">' + esc(n.name) + note + st + '</span>';
+      }).join('') + '</div></div>';
+    var uses = t.uses.map(RW.node).filter(function (n) { return n.status === 'verified'; });
+    if (uses.length) {
+      html += '<div class="stack" style="gap:8px"><span class="small" style="font-weight:700">Already yours · the assistant may write these parts</span><div style="display:flex;flex-wrap:wrap;gap:6px">' +
+        uses.map(function (n) { return '<span class="tag">' + esc(n.name) + '</span>'; }).join('') + '</div>' +
+        (uses.some(function (n) { return n.byManager; }) ? '<span class="small muted">' + uses.filter(function (n) { return n.byManager; }).map(function (n) { return n.name; }).join(', ') + ' marked as already known by Maria Keller</span>' : '') + '</div>';
+    }
+    document.getElementById('concepts').innerHTML = html;
+  }
+  function stepsList(t) {
+    document.getElementById('steps-head').textContent = 'Steps · ' + t.step + ' of ' + t.steps.length;
+    document.getElementById('steps').innerHTML = t.steps.map(function (s, i) {
+      var k = i + 1 < t.step ? 'done' : (i + 1 === t.step ? 'current' : 'todo');
+      return '<div class="step ' + k + '"' + (k === 'current' ? ' aria-current="step"' : '') + '><span class="num">' + (k === 'done' ? CHECK_SVG : '') + '</span>' +
+        '<span style="display:flex;flex-direction:column;gap:2px"><span class="t">' + esc(s.title) + '</span>' +
+        (s.teach ? '<span class="teach">Teaches ' + esc(RW.NODE[s.teach].name) + '</span>' : '') +
+        (s.kind === 'assist' ? '<span class="teach" style="color:var(--muted)">Assistant writes it</span>' : '') + '</span></div>';
+    }).join('');
+  }
+
+  // ---------- step work ----------
+  function next(t) { RW.updateTask(t.id, function (r) { r.step = t.step + 1; }); chatLog = []; renderAll(); }
+  function boost(t, teach) {
+    RW.update(function (s) {
+      var o = s.ov[teach];
+      if (o && o.status === 'verified') return;
+      var base = (o && o.pct) || RW.NODE[teach].basePct || 0;
+      s.ov[teach] = { status: 'learning', pct: Math.min(95, base + 25), task: t.id };
+    });
+  }
+  function work(t) {
+    var S = t.steps[t.step - 1], w = document.getElementById('work');
+    document.getElementById('mode-pill').textContent = S.kind === 'finish' ? 'PAUSED FOR CHECKS' : 'TEACHING MODE';
+    if (S.kind === 'finish') return finish(t, w);
+
+    if (S.kind === 'plan') {
+      w.innerHTML = '<div class="card"><span class="eyebrow">Step ' + t.step + ' · Plan</span><h2 class="title-m">' + esc(S.title) + '</h2>' +
+        '<p style="font-size:15px;color:var(--text2)">' + (S.intro || '') + '</p>' +
+        '<div class="note note-soft"><span>Answer the tutor\'s question on the right so it knows the details. Then continue.</span></div>' +
+        '<div><button class="btn btn-primary" id="next" type="button"' + (answered[t.id + ':' + t.step] || !S.ask ? '' : ' disabled') + '>Next step</button></div></div>';
+      document.getElementById('next').addEventListener('click', function () { next(t); });
+      return;
+    }
+
+    var assist = S.kind === 'assist';
+    var missing = assist ? (S.uses || []).map(RW.node).filter(function (n) { return n.status !== 'verified'; }) : [];
+    var readOnly = assist && !missing.length;
+    var saved = t.code[t.step];
+    var starter = S.code || (commentFor(t.lane) + 'Your code for: ' + S.title + '\n');
+    var aiReview = S.kind === 'learn' && !S.must;
+    w.innerHTML =
+      (assist ? (missing.length
+        ? '<div class="note note-warn"><span>I\'d normally write this part, but <b>' + esc(missing.map(function (n) { return n.name; }).join(', ')) + '</b> isn\'t verified any more, so this one is yours to write.</span></div>'
+        : '<div class="note note-good"><span><b>Written by the assistant.</b> ' + esc(S.intro || '') + '</span></div>') : '') +
+      '<div class="editor"><div class="editor-bar"><span class="file-tab">' + (t.lane === 'py' ? 'task.py' : t.lane === 'ts' ? 'task.ts' : 'main.go') + '</span>' +
+      '<span class="small muted">' + (readOnly ? 'Read it and make sure each line makes sense.' : 'You write this. The tutor reviews.') + '</span>' +
+      (readOnly ? '' : '<button class="btn" id="review" type="button" style="margin-left:auto;min-height:40px">Run &amp; review</button>') + '</div>' +
+      '<label class="sr-only" for="code">Code for step ' + t.step + '</label><textarea id="code" class="code-area" spellcheck="false" autocomplete="off"' + (readOnly ? ' readonly' : '') + '></textarea></div>' +
+      '<div id="review-out"></div>' +
+      '<div class="split" style="align-items:center"><span class="small muted">Step ' + t.step + ' of ' + t.steps.length + ': ' + esc(S.title) + '</span>' +
+      '<span style="display:flex;gap:8px;flex-wrap:wrap">' + (aiReview && !live ? '<button class="btn" id="self" type="button">Mark step as done</button>' : '') +
+      '<button class="btn btn-primary" id="next" type="button"' + (readOnly || (assist && missing.length) ? '' : ' disabled') + '>Next step</button></span></div>' +
+      (aiReview && !live ? '<p class="small muted">Self-check: mark the step done when you\'re happy with your code. The end check shows whether it stuck.</p>' : '');
+    var code = document.getElementById('code');
+    code.value = saved != null ? saved : starter;
+    code.addEventListener('input', function () { var v = code.value; RW.updateTask(t.id, function (r) { r.code[t.step] = v; }); });
+    code.addEventListener('keydown', function (e) {
+      if (e.key === 'Tab' && !e.shiftKey && !code.readOnly) { e.preventDefault(); var p = code.selectionStart; code.value = code.value.slice(0, p) + '    ' + code.value.slice(code.selectionEnd); code.selectionStart = code.selectionEnd = p + 4; }
+    });
+    document.getElementById('next').addEventListener('click', function () { next(t); });
+    var self = document.getElementById('self');
+    if (self) self.addEventListener('click', function () { boost(t, S.teach); document.getElementById('next').disabled = false; say('ai', 'Marked as done. Your end check will show whether it stuck.'); });
+    var rv = document.getElementById('review');
+    if (rv) rv.addEventListener('click', function () {
+      var out = document.getElementById('review-out');
+      if (!aiReview) {
+        var src = code.value;
+        var ok = re(S.must).every(function (r) { return r.test(src); }) && !re(S.mustNot).some(function (r) { return r.test(src); });
+        out.innerHTML = '<div class="note ' + (ok ? 'note-good' : 'note-warn') + '"><span>' + (ok ? S.good : S.bad) + '</span></div>';
+        document.getElementById('next').disabled = !ok;
+        say('ai', ok ? S.good : S.bad.replace(/<b>Line \d+:<\/b>\s*/, '') + ' I won\'t write this part for you, since ' + RW.NODE[S.teach].name + ' isn\'t verified yet.');
+        if (ok && S.teach) boost(t, S.teach);
+        return;
+      }
+      out.innerHTML = '<div class="note note-soft"><span>The tutor is reviewing your code…</span></div>';
+      var p = pick();
+      RW.api('/api/assistant', { method: 'POST', body: { user: 'alex', mode: 'review', message: 'Please review my code for this step.', provider: p.provider, model: p.model,
+        context: { task: t.title, step: S.title, teaching: RW.NODE[S.teach].name, verified: verifiedList(), code: code.value } } })
+        .then(function (r) {
+          var ok = /^\s*PASS/i.test(r.reply), text = r.reply.replace(/^\s*(PASS|NOT YET)[:.!\s-]*/i, '');
+          out.innerHTML = '<div class="note ' + (ok ? 'note-good' : 'note-warn') + '"><span><b>' + (ok ? 'Looks right.' : 'Not yet.') + '</b> ' + esc(text) + '</span></div>';
+          document.getElementById('next').disabled = !ok;
+          if (ok) boost(t, S.teach);
+        })
+        .catch(function (err) { out.innerHTML = '<div class="note note-warn"><span>' + esc(err.message) + '</span></div>'; });
+    });
+  }
+
+  function finish(t, w) {
+    var open = t.teaches.map(RW.node).filter(function (n) { return n.status !== 'verified'; });
+    if (!open.length) {
+      w.innerHTML = '<div class="card"><span class="eyebrow accent">Finished</span><h2 class="title-l">Task done, concepts unlocked</h2>' +
+        '<p class="muted">Everything this task taught is now verified in your tree. The assistant can build with it from now on.</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-primary" href="tree.html?node=' + t.teaches[0] + '">See your tree</a>' +
+        '<button class="btn" id="new2" type="button">Start another task</button><button class="btn" id="again" type="button">Do this task again</button></div></div>';
+      document.getElementById('new2').addEventListener('click', function () { mode = 'new'; renderAll(); });
+      document.getElementById('again').addEventListener('click', function () { askReset(t); });
+      return;
+    }
+    w.innerHTML = '<div class="card"><span class="eyebrow">Finish line</span><h2 class="title-m">' + open.length + ' short check' + (open.length > 1 ? 's' : '') + ', solved on your own</h2>' +
+      '<p class="muted" style="font-size:14px">Pass them and these concepts turn verified in your tree. The tutor is paused during the checks.</p></div>' +
+      open.map(function (n) {
+        var c = D.checks[n.id] || { q: 'Write a few lines that use <b>' + esc(n.name) + '</b>. (Demo: any honest attempt passes.)' };
+        return '<div class="card"><div class="split"><h3 style="font-size:16px;font-weight:800">' + esc(n.name) + '</h3><span class="mono small muted">~10 min</span></div>' +
+          '<p style="font-size:14px;color:var(--text2)">' + c.q + '</p><label class="sr-only" for="chk-' + n.id + '">Your answer for ' + esc(n.name) + '</label>' +
+          '<textarea id="chk-' + n.id + '" class="code-area" style="min-height:160px;border:1px solid var(--border);border-radius:12px" spellcheck="false"></textarea>' +
+          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-primary" type="button" data-run="' + n.id + '">Check</button><span class="small" data-out="' + n.id + '" role="status"></span></div></div>';
+      }).join('');
+    w.querySelectorAll('[data-run]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-run'), c = D.checks[id];
+        var src = document.getElementById('chk-' + id).value;
+        var ok = c ? re(c.must).every(function (r) { return r.test(src); }) : src.trim().length > 30;
+        var out = w.querySelector('[data-out="' + id + '"]');
+        if (ok) {
+          RW.verify(id, 'task', t.id);
+          out.textContent = 'Passed. ' + RW.NODE[id].name + ' is verified.'; out.style.color = 'var(--good-text)';
+          setTimeout(renderAll, 900);
+        } else { out.textContent = 'Not yet. Check the task description and try again.'; out.style.color = 'var(--bad-text)'; }
+      });
+    });
+  }
+
+  // ---------- new task ----------
+  function newTask() {
+    var w = document.getElementById('work');
+    var running = {}; RW.tasks().forEach(function (t) { if (t.tpl) running[t.tpl] = t.id; });
+    var h = '<div class="tabs" role="group" aria-label="How to start"><button type="button" data-tab="library" ' + (newTab === 'library' ? 'aria-pressed="true"' : 'aria-pressed="false"') + '>From the library</button>' +
+      '<button type="button" data-tab="own" ' + (newTab === 'own' ? 'aria-pressed="true"' : 'aria-pressed="false"') + '>Describe your own</button></div>';
+    if (learnHint && RW.NODE[learnHint]) h += '<div class="note note-soft"><span>Showing ways to learn <b>' + esc(RW.NODE[learnHint].name) + '</b> (' + RW.node(learnHint).laneName + ').</span></div>';
+    if (newTab === 'library') {
+      var lib = D.library.slice().sort(function (a, b) {
+        return (learnHint ? (b.teaches.indexOf(learnHint) !== -1) - (a.teaches.indexOf(learnHint) !== -1) : 0);
+      });
+      h += '<div class="lib-grid">' + lib.map(function (L) {
+        var ns = L.teaches.map(RW.node), hit = learnHint && L.teaches.indexOf(learnHint) !== -1;
+        var allDone = ns.every(function (n) { return n.status === 'verified'; });
+        return '<div class="card card-tight" style="' + (hit ? 'border-color:var(--accent)' : '') + '">' +
+          '<div class="split" style="align-items:center"><span class="eyebrow" style="color:' + RW.LANE[L.lane].c + '">' + RW.LANE[L.lane].name + ' · ' + L.ticket + '</span><span class="small muted">' + L.steps.length + ' steps</span></div>' +
+          '<h3 style="font-size:17px;font-weight:800">' + esc(L.title) + '</h3><p class="small muted" style="font-size:14px">' + esc(L.brief) + '</p>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px">' + ns.map(function (n) { return '<span class="tag ' + (n.status === 'verified' ? '' : 'tag-accent') + '">' + (n.status === 'verified' ? '✓ ' : '') + esc(n.name) + '</span>'; }).join('') + '</div>' +
+          (running[L.id] ? '<button class="btn" type="button" data-open="' + running[L.id] + '">Open task</button>'
+            : '<button class="btn btn-primary" type="button" data-start="' + L.id + '">Start task</button>') +
+          (allDone && !running[L.id] ? '<span class="small muted">You\'ve verified everything this teaches, but you can still practise.</span>' : '') + '</div>';
+      }).join('') + '</div>';
+    } else {
+      var lane = (learnHint && RW.NODE[learnHint] && RW.NODE[learnHint].lane) || 'py';
+      h += '<form class="card" id="own-form" style="gap:16px">' +
+        '<div class="stack" style="gap:4px"><h2 class="title-m">Describe a real task</h2><p class="muted" style="font-size:14px">The tutor turns it into steps. You write the code; it teaches the concepts you haven\'t learned yet and writes only the parts you\'ve already verified.</p></div>' +
+        '<label class="field" for="own-title">Title<input type="text" id="own-title" placeholder="e.g. Export invoices to CSV every night" maxlength="60"></label>' +
+        '<label class="field" for="own-lang">Language<select id="own-lang">' + D.lanes.map(function (l) { return '<option value="' + l.id + '"' + (l.id === lane ? ' selected' : '') + '>' + l.name + '</option>'; }).join('') + '</select></label>' +
+        '<label class="field" for="own-desc">What does it need to do?<textarea id="own-desc" rows="3" placeholder="Describe the task in a few sentences."></textarea></label>' +
+        '<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px"><legend style="font-size:14px;font-weight:700;margin-bottom:4px">Concepts to learn <span class="muted" style="font-weight:500">(pick 1 to 3)</span></legend>' +
+        '<div class="check-list" id="own-concepts"></div><span class="small muted" id="own-hint"></span></fieldset>' +
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-primary" type="submit" id="own-go">Plan my task</button><span class="small" id="own-msg" role="status"></span></div></form>';
+    }
+    w.innerHTML = h;
+    w.querySelectorAll('[data-tab]').forEach(function (b) { b.addEventListener('click', function () { newTab = b.getAttribute('data-tab'); newTask(); }); });
+    w.querySelectorAll('[data-start]').forEach(function (b) {
+      b.addEventListener('click', function () { RW.startTask(b.getAttribute('data-start')); mode = 'task'; learnHint = null; chatLog = []; answered = {}; renderAll(); toast('Task started.'); });
+    });
+    w.querySelectorAll('[data-open]').forEach(function (b) {
+      b.addEventListener('click', function () { RW.setActive(b.getAttribute('data-open')); mode = 'task'; learnHint = null; chatLog = []; renderAll(); });
+    });
+    if (newTab === 'own') ownForm();
+  }
+
+  function ownForm() {
+    var langSel = document.getElementById('own-lang');
+    function fill() {
+      var open = RW.allNodes().filter(function (n) { return n.lane === langSel.value && n.status !== 'verified'; });
+      document.getElementById('own-concepts').innerHTML = open.map(function (n) {
+        return '<label><input type="checkbox" value="' + n.id + '"' + (n.id === learnHint ? ' checked' : '') + '>' + esc(n.name) + '</label>';
+      }).join('') || '<span class="small muted">You\'ve verified everything in this language.</span>';
+      document.getElementById('own-hint').textContent = live
+        ? 'Or leave these empty: the AI reads your description and picks the concepts and steps.'
+        : 'Choose the concepts you want this task to teach.';
+    }
+    langSel.addEventListener('change', fill); fill();
+    document.getElementById('own-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var title = document.getElementById('own-title').value.trim(), desc = document.getElementById('own-desc').value.trim();
+      var picked = [].slice.call(document.querySelectorAll('#own-concepts input:checked')).map(function (i) { return i.value; });
+      var msg = document.getElementById('own-msg');
+      msg.style.color = 'var(--bad-text)';
+      if (picked.length > 3) { msg.textContent = 'Pick at most 3 concepts so the task stays focused.'; return; }
+      if (!picked.length && !live) { msg.textContent = 'Pick at least one concept to learn.'; return; }
+      if (!picked.length && !desc) { msg.textContent = 'Describe the task so the AI can plan it.'; return; }
+      if (picked.length) { startOwn(manualPlan(langSel.value, title, desc, picked)); return; }
+      msg.style.color = 'var(--muted)'; msg.textContent = 'Planning your task…';
+      document.getElementById('own-go').disabled = true;
+      var p = pick();
+      RW.api('/api/plan', { method: 'POST', body: { user: 'alex', lang: RW.LANE[langSel.value].name, description: (title ? title + '. ' : '') + desc, catalog: RW.catalog(), provider: p.provider, model: p.model } })
+        .then(function (r) { startOwn(aiPlan(langSel.value, title, r)); })
+        .catch(function (err) { document.getElementById('own-go').disabled = false; msg.style.color = 'var(--bad-text)'; msg.textContent = err.message + ' You can also pick the concepts yourself.'; });
+    });
+  }
+  function finishStep() { return { kind: 'finish', title: 'Finish line: short checks' }; }
+  function manualPlan(lane, title, desc, ids) {
+    var steps = [{ kind: 'plan', title: 'Plan it together', intro: esc(desc || 'Your own task.'),
+      ask: { q: 'Do you already know where to start?', opts: ['Yes', 'Not yet'], reply: { 'Yes': 'Great. Write it one part at a time and I\'ll help with each concept.', 'Not yet': 'No problem. We\'ll take it one concept at a time.' } } }]
+      .concat(ids.map(function (id) {
+        var n = RW.NODE[id];
+        return { kind: 'learn', title: 'Use ' + n.name.toLowerCase(), teach: id, intro: esc(n.desc) + ' Write the part of your task that needs it.', code: commentFor(lane) + 'Your code that uses ' + n.name.toLowerCase() + '\n' };
+      })).concat([finishStep()]);
+    return { lane: lane, ticket: 'Own task', title: title || ('Practise ' + ids.map(function (id) { return RW.NODE[id].name; }).join(' & ')), brief: desc || 'A task you planned yourself.', teaches: ids, uses: [], steps: steps };
+  }
+  function aiPlan(lane, title, r) {
+    var steps = r.steps.map(function (s) {
+      var ask = s.question && s.options && s.options.length === 2 ? { q: s.question, opts: s.options, reply: {} } : null;
+      if (ask) { ask.reply[s.options[0]] = 'Thanks, I\'ll keep that in mind as we go.'; ask.reply[s.options[1]] = 'Got it, I\'ll take that into account.'; }
+      return s.teach
+        ? { kind: 'learn', title: s.title, teach: s.teach, intro: esc(s.intro), example: s.example, ask: ask, code: commentFor(lane) + 'Your code for: ' + s.title + '\n' }
+        : { kind: 'plan', title: s.title, intro: esc(s.intro), ask: ask };
+    });
+    if (!r.teaches.length) throw new Error('The plan didn’t include anything new to learn.');
+    return { lane: lane, ticket: 'Own task', title: title || r.title, brief: r.brief, teaches: r.teaches, uses: [], steps: steps.concat([finishStep()]), aiPlanned: true };
+  }
+  function startOwn(plan) { RW.startTask(null, plan); mode = 'task'; learnHint = null; chatLog = []; answered = {}; renderAll(); toast('Task planned. Let’s start.'); }
+
+  // ---------- tutor chat ----------
+  function verifiedList() { return RW.allNodes().filter(function (n) { return n.status === 'verified'; }).map(function (n) { return n.laneName + ': ' + n.name; }); }
+  function say(who, html) { chatLog.push([who, html]); drawChat(); }
+  function drawChat() {
+    var t = cur(); if (!t) return;
+    var S = t.steps[t.step - 1], c = document.getElementById('chat'), h = '';
+    if (S.kind === 'finish') {
+      h += '<div class="msg-ai"><span class="small" style="font-weight:700;color:var(--accent)">FINISH LINE</span><span>I\'m paused while you do the checks, so they really show what you learned. Good luck.</span></div>';
+    } else {
+      var label = S.teach ? 'STEP ' + t.step + ' · ' + RW.NODE[S.teach].name.toUpperCase() : 'STEP ' + t.step + ' · ' + S.title.toUpperCase();
+      if (S.kind !== 'assist') h += '<div class="msg-ai"><span class="small" style="font-weight:700;color:var(--accent)">' + esc(label) + '</span><span>' + (S.intro || '') + '</span>' +
+        (S.example ? '<pre class="snippet">' + esc(S.example) + '</pre><span class="small muted">A general example, not your code.</span>' : '') + '</div>';
+      else h += '<div class="msg-ai"><span class="small" style="font-weight:700;color:var(--accent)">' + esc(label) + '</span><span>This part only uses concepts you\'ve verified, so I wrote it. Ask me about any line.</span></div>';
+      if (S.ask) h += '<div class="ask"><span style="font-size:14px;font-weight:600">' + esc(S.ask.q) + '</span><div class="ask-opts">' +
+        S.ask.opts.map(function (o) { return '<button class="btn" type="button" data-opt="' + esc(o) + '" style="min-height:40px">' + esc(o) + '</button>'; }).join('') + '</div></div>';
+    }
+    chatLog.forEach(function (m) { h += m[0] === 'me' ? '<div class="msg-me">' + esc(m[1]) + '</div>' : '<div class="msg-ai"><span>' + m[1] + '</span></div>'; });
+    c.innerHTML = h;
+    c.querySelectorAll('[data-opt]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var o = b.getAttribute('data-opt');
+        answered[t.id + ':' + t.step] = true;
+        say('me', o); say('ai', esc(S.ask.reply[o] || 'Got it.'));
+        var n = document.getElementById('next'); if (n && S.kind === 'plan') n.disabled = false;
+      });
+    });
+    c.scrollTop = c.scrollHeight;
+  }
+  document.getElementById('ask-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var inp = document.getElementById('ask-input'), q = inp.value.trim(), t = cur();
+    if (!q || !t) return;
+    inp.value = '';
+    var S = t.steps[t.step - 1];
+    say('me', q);
+    if (S.kind === 'finish') { say('ai', 'I\'m paused during the checks. I\'ll answer once you\'re done.'); return; }
+    say('ai', '<span class="muted">Thinking…</span>');
+    var codeEl = document.getElementById('code'), p = pick();
+    RW.api('/api/assistant', { method: 'POST', body: { user: 'alex', mode: 'tutor', message: q, provider: p.provider, model: p.model,
+      context: { task: t.title, step: S.title, teaching: S.teach ? RW.NODE[S.teach].name : '', verified: verifiedList(), code: codeEl ? codeEl.value : '' } } })
+      .then(function (r) { chatLog.pop(); say('ai', esc(r.reply).replace(/\n/g, '<br>') + '<br><span class="small muted">via ' + esc(r.provider) + ' · ' + esc(r.model) + '</span>'); })
+      .catch(function (err) { chatLog.pop(); say('ai', esc(err.message) + ' <a href="settings.html">AI settings</a>'); });
+  });
+  function pick() {
+    var v = document.getElementById('model-pick').value || '', i = v.indexOf('|');
+    return i === -1 ? {} : { provider: v.slice(0, i), model: v.slice(i + 1) };
+  }
+  function aiStatus() {
+    RW.api('/api/keys?user=alex').then(function (r) {
+      var usable = r.keys.filter(function (k) { return k.model || (k.models && k.models.length); });
+      if (!usable.length) { document.getElementById('ai-status').innerHTML = 'No AI provider yet. <a href="settings.html">Add your API key</a> to chat with the tutor.'; return; }
+      live = true;
+      var saved = null; try { saved = localStorage.getItem(PICK_KEY); } catch (e) { saved = null; }
+      var def = usable.filter(function (k) { return k.provider === r.defaultProvider; })[0] || usable[0];
+      var selected = saved || (def.provider + '|' + def.model), sel = document.getElementById('model-pick');
+      sel.innerHTML = usable.map(function (k) {
+        var list = (k.models && k.models.length ? k.models : [k.model]).slice(0, 80);
+        if (k.model && list.indexOf(k.model) === -1) list.unshift(k.model);
+        return '<optgroup label="' + esc(k.name) + '">' + list.map(function (m) { var v = k.provider + '|' + m; return '<option value="' + esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + esc(m) + (m === k.model ? ' (your default)' : '') + '</option>'; }).join('') + '</optgroup>';
+      }).join('');
+      document.getElementById('model-row').hidden = false;
+      sel.addEventListener('change', function () { try { localStorage.setItem(PICK_KEY, sel.value); } catch (e) { } });
+      document.getElementById('ai-status').innerHTML = 'Every answer goes through the AI gate. <a href="settings.html">Manage keys</a>';
+      renderAll();
+    }).catch(function () {
+      document.getElementById('ai-status').textContent = 'Free-text answers aren\u2019t available right now. The step buttons still work.';
+    });
+  }
+
+  function renderAll() {
+    headerArea(); taskList();
+    var t = cur(), inTask = mode === 'task' && t;
+    ['brief-card', 'concepts', 'steps-card', 'tutor'].forEach(function (id) { document.getElementById(id).hidden = !inTask; });
+    if (!inTask) { newTask(); return; }
+    document.getElementById('g-brief').textContent = t.brief;
+    concepts(t); stepsList(t); work(t); drawChat();
+  }
+  renderAll();
+  aiStatus();
+})();
+</script>
+</body>
+</html>

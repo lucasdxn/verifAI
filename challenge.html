@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>verifAI · Verification challenge</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</head>
+<body>
+<header id="rw-header"></header>
+<div style="background:var(--warn-bg);border-bottom:1px solid var(--warn-border)">
+  <div class="wrap" style="padding-top:12px;padding-bottom:12px;display:flex;gap:10px;align-items:center;font-size:14px;color:var(--warn-text)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+    <span><b>The assistant is paused for this challenge.</b> Write it yourself. Large pastes are flagged for review.</span>
+  </div>
+</div>
+<main class="wrap stack">
+  <div class="split" style="align-items:center">
+    <div class="stack" style="gap:2px">
+      <a href="tree.html" id="back" style="font-size:14px;font-weight:700;min-height:32px;display:inline-flex;align-items:center">← Back to tree</a>
+      <span class="eyebrow accent" id="c-eyebrow"></span>
+      <h1 class="title-l" id="c-title"></h1>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <span class="tag" style="padding:8px 12px"><b class="mono" id="timer">45:00</b>&nbsp;left of 45 min</span>
+      <span class="tag" style="padding:8px 12px">Attempt 1 of 3</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <section class="card side" aria-label="Task" id="task"></section>
+    <section class="grow stack" style="gap:16px" aria-label="Your solution">
+      <div class="editor">
+        <div class="editor-bar"><span class="file-tab" id="fname">solution.py</span><span class="small muted">Python 3.12</span></div>
+        <label class="sr-only" for="code">Your solution</label>
+        <textarea id="code" class="code-area" spellcheck="false" autocomplete="off"></textarea>
+      </div>
+      <div id="paste-note" class="note note-warn" hidden><span><b>Large paste detected.</b> It's allowed, but it's logged and your reviewer will see it.</span></div>
+      <div class="card" style="gap:14px">
+        <div class="split" style="align-items:center">
+          <h2 style="font-size:16px;font-weight:700" id="t-head">Visible tests</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" id="run">Run tests</button>
+            <button class="btn btn-primary" id="submit" disabled>Submit for verification</button>
+          </div>
+        </div>
+        <ul class="tests" id="tests"></ul>
+        <p class="small muted">Demo: these checks read your code's structure. The real system runs it with hidden tests in a sandbox.</p>
+        <div id="result"></div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer id="rw-footer"></footer>
+
+<script>
+RW.initPage('challenge.html');
+(function () {
+  var esc = RW.esc;
+  var params = new URLSearchParams(location.search);
+  var id = params.get('concept') || 'py-async';
+  if (!RW.NODE[id]) id = 'py-async';
+  var n = RW.node(id);
+
+  var CH = {
+    'py-async': {
+      task: '<h2 class="title-m">The task</h2><p style="font-size:15px;color:var(--text2)">Write <code>fetch_all(urls, limit)</code> that downloads every URL concurrently and returns the bodies in the same order as the input.</p>' +
+        '<div class="stack" style="gap:8px"><span class="eyebrow">Requirements</span><ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.7;color:var(--text2)"><li>No more than <code>limit</code> requests run at once</li><li>Results keep the input order</li><li>A failed URL returns <code>None</code> and doesn\'t stop the rest</li><li>Use the provided <code>fetch(url)</code> coroutine</li></ul></div>' +
+        '<div class="stack" style="gap:8px;border-top:1px solid var(--border);padding-top:14px"><span class="eyebrow">When you pass</span><p style="font-size:14px;color:var(--text2)">Async &amp; await joins your verified skills. The assistant can then write async code for you.</p></div>',
+      code: 'import asyncio\nfrom challenge import fetch\n\n\nasync def fetch_all(urls, limit):\n    sem = asyncio.Semaphore(limit)\n\n    async def one(url):\n        try:\n            return await fetch(url)\n        except Exception:\n            return None\n\n    tasks = [one(u) for u in urls]\n    return await asyncio.gather(*tasks)\n',
+      tests: [
+        ['fetch_all is a coroutine', /async\s+def\s+fetch_all/, 'define it with async def'],
+        ['returns bodies in input order', /asyncio\.gather\s*\(/, 'expected results in input order'],
+        ['failed URL returns None', /except[\s\S]*?return\s+None/, 'one failing URL crashed the whole call'],
+        ['runs faster than sequential', /asyncio\.gather\s*\(\s*\*/, 'requests ran one after another'],
+        ['respects the concurrency limit', /async\s+with\s+sem/, 'expected at most 5 in flight, saw 20']
+      ]
+    }
+  };
+  var c = CH[id] || {
+    task: '<h2 class="title-m">The task</h2><p style="font-size:15px;color:var(--text2)">Write a short program that shows you can use <b>' + esc(n.name) + '</b>: ' + esc(n.desc) + '</p><div class="note note-soft">Demo: a full challenge for this concept isn\'t written yet. Any honest attempt of a few lines passes.</div>',
+    code: '# Your solution\n',
+    tests: [['solution has real code', /\n\s*\S+[\s\S]{30,}/, 'write at least a few lines']]
+  };
+
+  document.getElementById('c-eyebrow').textContent = n.laneName + ' · Verification challenge';
+  document.getElementById('c-title').textContent = n.name;
+  document.getElementById('task').innerHTML = c.task;
+  var code = document.getElementById('code');
+  code.value = c.code;
+
+  if (n.status === 'verified') {
+    document.getElementById('result').innerHTML = '<div class="note note-good"><span>You already verified this on ' + n.date + '. <a href="tree.html?node=' + id + '">See it in your tree</a></span></div>';
+  }
+
+  // timer
+  var left = 45 * 60;
+  setInterval(function () {
+    left = Math.max(0, left - 1);
+    document.getElementById('timer').textContent = Math.floor(left / 60) + ':' + ('0' + left % 60).slice(-2);
+  }, 1000);
+
+  code.addEventListener('paste', function (e) {
+    var t = (e.clipboardData || window.clipboardData).getData('text') || '';
+    if (t.length > 150) document.getElementById('paste-note').hidden = false;
+  });
+  code.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      var s = code.selectionStart;
+      code.value = code.value.slice(0, s) + '    ' + code.value.slice(code.selectionEnd);
+      code.selectionStart = code.selectionEnd = s + 4;
+    }
+  });
+
+  var PASS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  function run() {
+    var src = code.value, passed = 0;
+    document.getElementById('tests').innerHTML = c.tests.map(function (t) {
+      var ok = t[1].test(src);
+      if (ok) { passed++; return '<li class="pass">' + PASS + '<span>' + esc(t[0]) + '</span></li>'; }
+      return '<li class="fail"><span>✕ ' + esc(t[0]) + '</span><code>' + esc(t[2]) + '</code></li>';
+    }).join('');
+    document.getElementById('t-head').textContent = 'Visible tests · ' + passed + ' of ' + c.tests.length + ' passing';
+    document.getElementById('submit').disabled = passed !== c.tests.length || n.status === 'verified';
+  }
+  document.getElementById('run').addEventListener('click', run);
+  document.getElementById('submit').addEventListener('click', function () {
+    RW.verify(id, 'challenge');
+    document.getElementById('submit').disabled = true;
+    document.getElementById('result').innerHTML = '<div class="note note-good"><span><b>Verified!</b> ' + esc(n.name) + ' is now in your verified skills, and the assistant can use it. <a href="tree.html?node=' + id + '">See your tree</a></span></div>';
+  });
+  run();
+})();
+</script>
+</body>
+</html>
