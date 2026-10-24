@@ -236,10 +236,17 @@ Reply with ONLY JSON:
     }
     window.addEventListener('resize', fit); fit();
   })();
-  // Send the back link to the right home for the chosen role.
+  // Send the back link to the right home for the chosen role, and keep the light/dark choice made in the app.
   try {
     var st = JSON.parse(localStorage.getItem('rootwise-demo-v1') || '{}');
     if (st.role) document.getElementById('back').href = st.role === 'manager' ? 'team.html' : 'home.html';
+    if (st.dark === true || st.dark === false) {
+      var want = st.dark ? 'dark' : 'light';
+      var keep = function () { if (document.documentElement.getAttribute('data-theme') !== want) document.documentElement.setAttribute('data-theme', want); };
+      keep();
+      new MutationObserver(keep).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      window.addEventListener('load', keep);
+    }
   } catch (e) { }
 </script>
 </body>

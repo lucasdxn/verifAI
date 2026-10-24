@@ -286,8 +286,9 @@
   // ---------- rendering helpers ----------
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function setTheme(dark) {
-    if (dark === null || dark === undefined) document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    // No choice yet: leave the theme to the system or the page host.
+    if (dark === null || dark === undefined) return;
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   }
   function isDark() {
     var a = document.documentElement.getAttribute('data-theme');
@@ -297,6 +298,23 @@
   // Where the page runs: the local server (full features), a plain file, or a hosted copy without the server.
   var isLocal = /^(localhost|127\.0\.0\.1|\[::1])$/.test(location.hostname);
   setTheme(load().dark);
+  // The page host (e.g. the artifact viewer) can set its own data-theme after the page loads.
+  // If the user picked light or dark with our toggle, keep their choice on every page.
+  function keepTheme() {
+    var d = load().dark;
+    if (d === null || d === undefined) return;
+    var want = d ? 'dark' : 'light';
+    if (document.documentElement.getAttribute('data-theme') !== want) document.documentElement.setAttribute('data-theme', want);
+  }
+  try {
+    new MutationObserver(function () {
+      keepTheme();
+      if (document.getElementById('rw-theme')) header(currentActive); // keep the toggle icon in sync
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  } catch (e) { /* no MutationObserver: the checks below still run */ }
+  document.addEventListener('DOMContentLoaded', keepTheme);
+  window.addEventListener('load', keepTheme);
+  window.addEventListener('pageshow', keepTheme);
 
   // Each role sees its own navigation. Developers never get the Team tab.
   var NAV = {
